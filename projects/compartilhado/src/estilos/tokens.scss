@@ -47,6 +47,15 @@ body {
 
 h1, h2, h3, h4 { margin: 0; line-height: 1.2; }
 
+// Selects: seta customizada com respiro da borda direita (a nativa cola no canto)
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%234a5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px !important;
+}
+
 // ---------- Botões ----------
 .botao {
   display: inline-flex;
@@ -98,7 +107,7 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.2; }
     padding: 10px 12px;
     border: 1.5px solid var(--borda);
     border-radius: 8px;
-    background: var(--superficie);
+    background-color: var(--superficie);
     color: var(--texto);
     outline: none;
     width: 100%;

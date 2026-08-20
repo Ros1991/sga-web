@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  Api, Autenticacao, FilaSnapshot, Guiche, Realtime, SenhaResumo, Toasts,
+  Api, Autenticacao, FilaSnapshot, Guiche, MeuPerfil, Realtime, SenhaResumo, Toasts,
   Unidade, UnidadeDetalhe, mensagemDeErro,
 } from 'compartilhado';
 
@@ -17,20 +17,27 @@ const CHAVE_GUICHE = 'sga.atendimento.guiche';
         <p class="sub">{{ nomeUnidade() }}</p>
       </div>
       <div class="escolhas">
-        @if (ehAdmin) {
+        @if (unidades().length > 1) {
           <select [(ngModel)]="unidadeId" (ngModelChange)="trocarUnidade()">
             <option value="">Escolha a unidade…</option>
             @for (u of unidades(); track u.id) { <option [value]="u.id">{{ u.nome }}</option> }
           </select>
         }
-        <select [(ngModel)]="guicheId" (ngModelChange)="trocarGuiche()">
+        <select [(ngModel)]="guicheId" (ngModelChange)="trocarGuiche()" [disabled]="!unidadeId">
           <option value="">Escolha o guichê…</option>
-          @for (g of guiches(); track g.id) { <option [value]="g.id">Guichê {{ g.numero }}</option> }
+          @for (g of guichesDisponiveis(); track g.id) { <option [value]="g.id">Guichê {{ g.numero }}</option> }
         </select>
       </div>
     </header>
 
-    @if (!guicheId) {
+    @if (!unidadeId) {
+      <div class="cartao aviso">Escolha a unidade em que você está atendendo.</div>
+    } @else if (semGuicheLiberado()) {
+      <div class="cartao aviso">
+        O gerente ainda não liberou nenhum guichê para você nesta unidade.<br />
+        <small>Peça a liberação na aba Equipe da unidade.</small>
+      </div>
+    } @else if (!guicheId) {
       <div class="cartao aviso">Escolha o guichê em que você está atendendo para começar.</div>
     } @else {
       <div class="grade">
@@ -93,8 +100,9 @@ const CHAVE_GUICHE = 'sga.atendimento.guiche';
     .topo { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 22px;
       h2 { font-size: 24px; } .sub { color: var(--texto-3); margin: 4px 0 0; font-size: 14px; } }
     .escolhas { display: flex; gap: 8px;
-      select { padding: 10px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font: 14px var(--fonte); background: #fff; } }
-    .aviso { text-align: center; color: var(--texto-2); padding: 34px; }
+      select { padding: 10px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font: 14px var(--fonte); background-color: #fff; } }
+    .aviso { text-align: center; color: var(--texto-2); padding: 34px;
+      small { color: var(--texto-3); } }
     .grade { display: grid; grid-template-columns: 380px 1fr; gap: 16px;
       @media (max-width: 980px) { grid-template-columns: 1fr; } }
     .atual { h3 { font-size: 15px; margin-bottom: 14px; }
@@ -122,24 +130,33 @@ export class AtendimentoPagina implements OnInit, OnDestroy {
   readonly senhaAtual = signal<SenhaResumo | null>(null);
   readonly chamando = signal(false);
   readonly ehAdmin = this.auth.usuario()?.perfil === 'ADMIN';
+  private me: MeuPerfil | null = null;
 
   unidadeId = '';
   guicheId = '';
   guicheDestino = '';
 
   async ngOnInit() {
-    if (this.ehAdmin) {
-      this.unidades.set(await this.api.get<Unidade[]>('/unidades'));
-    } else {
-      this.unidadeId = this.auth.usuario()?.unidadeId ?? '';
-    }
+    // /unidades já vem filtrada por lotação para quem não é admin
+    const [unidades, me] = await Promise.all([
+      this.api.get<Unidade[]>('/unidades'),
+      this.api.get<MeuPerfil>('/auth/me'),
+    ]);
+    this.unidades.set(unidades);
+    this.me = me;
+
     const salvo = localStorage.getItem(CHAVE_GUICHE);
-    if (salvo) {
-      const { unidadeId, guicheId } = JSON.parse(salvo);
-      if (this.ehAdmin) this.unidadeId = unidadeId;
-      if (unidadeId === this.unidadeId) this.guicheId = guicheId;
+    const memoria = salvo ? (JSON.parse(salvo) as { unidadeId: string; guicheId: string }) : null;
+    if (memoria && unidades.some((u) => u.id === memoria.unidadeId)) {
+      this.unidadeId = memoria.unidadeId;
+      this.guicheId = memoria.guicheId;
+    } else if (unidades.length === 1) {
+      this.unidadeId = unidades[0].id;
     }
     if (this.unidadeId) await this.prepararUnidade();
+    if (this.guicheId && !this.guichesDisponiveis().some((g) => g.id === this.guicheId)) {
+      this.guicheId = '';
+    }
     this.timer = setInterval(() => this.atualizar(), 30_000);
   }
 
@@ -150,8 +167,21 @@ export class AtendimentoPagina implements OnInit, OnDestroy {
 
   nomeUnidade() {
     if (!this.unidadeId) return 'Escolha a unidade para atender';
-    return this.unidades().find((u) => u.id === this.unidadeId)?.nome
-      ?? 'Fila e chamadas da sua unidade';
+    return this.unidades().find((u) => u.id === this.unidadeId)?.nome ?? '';
+  }
+
+  /** Atendente vê apenas os guichês liberados pelo gerente. */
+  guichesDisponiveis() {
+    const todos = this.guiches();
+    if (this.auth.usuario()?.perfil !== 'ATENDENTE') return todos;
+    const liberados = new Set(this.me?.guicheIds ?? []);
+    return todos.filter((g) => liberados.has(g.id));
+  }
+
+  semGuicheLiberado() {
+    return this.auth.usuario()?.perfil === 'ATENDENTE'
+      && this.guiches().length > 0
+      && this.guichesDisponiveis().length === 0;
   }
 
   outrosGuiches() {
@@ -172,6 +202,7 @@ export class AtendimentoPagina implements OnInit, OnDestroy {
       this.ehAdmin ? this.unidadeId : undefined,
     );
     socket.on('fila', (snapshot: FilaSnapshot) => {
+      if (snapshot.unidadeId !== this.unidadeId) return; // multiunidade: só a tela atual
       this.fila.set(snapshot);
       this.sincronizarSenhaAtual(snapshot);
     });
@@ -185,8 +216,7 @@ export class AtendimentoPagina implements OnInit, OnDestroy {
 
   private async atualizar() {
     if (!this.unidadeId) return;
-    const sufixo = this.ehAdmin ? `?unidadeId=${this.unidadeId}` : '';
-    this.fila.set(await this.api.get<FilaSnapshot>(`/fila${sufixo}`));
+    this.fila.set(await this.api.get<FilaSnapshot>(`/fila?unidadeId=${this.unidadeId}`));
     if (this.guicheId) {
       this.senhaAtual.set(await this.api.get<SenhaResumo | null>(`/fila/guiche/${this.guicheId}/atual`));
     }
@@ -194,9 +224,9 @@ export class AtendimentoPagina implements OnInit, OnDestroy {
 
   private sincronizarSenhaAtual(snapshot: FilaSnapshot) {
     if (!this.guicheId) return;
+    const numero = this.guiches().find((g) => g.id === this.guicheId)?.numero;
     const minha = [...snapshot.emAtendimento, ...snapshot.ultimasChamadas]
-      .find((s) => (s.status === 'CHAMADA' || s.status === 'EM_ATENDIMENTO') &&
-        s.guiche === this.guiches().find((g) => g.id === this.guicheId)?.numero);
+      .find((s) => (s.status === 'CHAMADA' || s.status === 'EM_ATENDIMENTO') && s.guiche === numero);
     this.senhaAtual.set(minha ?? null);
   }
 

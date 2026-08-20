@@ -11,13 +11,26 @@ export interface UsuarioLogado {
   nome: string;
   login: string;
   perfil: Perfil;
-  unidadeId: string | null;
+  /** Unidades de lotação (vazio para ADMIN). */
+  unidadeIds: string[];
 }
 
 export interface RespostaLogin {
   accessToken: string;
   refreshToken: string;
   usuario: UsuarioLogado;
+}
+
+/** Resposta de GET /auth/me. */
+export interface MeuPerfil {
+  id: string;
+  nome: string;
+  login: string;
+  email: string;
+  perfil: Perfil;
+  unidades: { id: string; nome: string }[];
+  /** Guichês liberados pelo gerente (relevante para ATENDENTE). */
+  guicheIds: string[];
 }
 
 export interface Servico {
@@ -84,8 +97,8 @@ export interface Usuario {
   login: string;
   email: string;
   perfil: Perfil;
-  unidadeId: string | null;
-  unidade?: Unidade | null;
+  unidades: Unidade[];
+  guiches: Guiche[];
   ativo: boolean;
 }
 
@@ -143,7 +156,8 @@ export interface EventoMidia {
   tipo: TipoMidia;
   url: string | null;
   videoId: string | null;
-  unidadeId: string | null;
+  /** Unidades onde é exibido. Vazio = todas. */
+  unidades: Unidade[];
   inicio: string;
   fim: string;
   ativo: boolean;

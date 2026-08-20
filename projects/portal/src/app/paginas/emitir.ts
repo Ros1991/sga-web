@@ -13,7 +13,7 @@ import {
         <h2>Emitir senha</h2>
         <p class="sub">Emissão assistida — mesma fila do totem</p>
       </div>
-      @if (ehAdmin) {
+      @if (unidades().length > 1) {
         <select [(ngModel)]="unidadeId" (ngModelChange)="carregarUnidade()">
           <option value="">Escolha a unidade…</option>
           @for (u of unidades(); track u.id) { <option [value]="u.id">{{ u.nome }}</option> }
@@ -63,7 +63,7 @@ import {
   styles: [`
     .topo { display: flex; justify-content: space-between; align-items: end; margin-bottom: 22px;
       h2 { font-size: 24px; } .sub { color: var(--texto-3); margin: 4px 0 0; font-size: 14px; }
-      select { padding: 10px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font: 14px var(--fonte); background: #fff; } }
+      select { padding: 10px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font: 14px var(--fonte); background-color: #fff; } }
     .passo { margin-bottom: 20px; h3 { font-size: 14px; color: var(--texto-2); margin-bottom: 10px; } }
     .opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
     .opcao { border: 1.5px solid var(--borda); background: #fff; border-radius: 10px; padding: 12px 18px;
@@ -95,10 +95,10 @@ export class EmitirPagina implements OnInit {
 
   async ngOnInit() {
     this.prioridades.set((await this.api.get<NivelPrioridade[]>('/prioridades')).filter((p) => p.ativo).sort((a, b) => a.nivel - b.nivel));
-    if (this.ehAdmin) {
-      this.unidades.set(await this.api.get<Unidade[]>('/unidades'));
-    } else {
-      this.unidadeId = this.auth.usuario()?.unidadeId ?? '';
+    // /unidades já vem filtrada por lotação para quem não é admin
+    this.unidades.set(await this.api.get<Unidade[]>('/unidades'));
+    if (this.unidades().length === 1) {
+      this.unidadeId = this.unidades()[0].id;
       await this.carregarUnidade();
     }
     const normal = this.prioridades().find((p) => p.nivel === 0);
@@ -116,7 +116,7 @@ export class EmitirPagina implements OnInit {
     this.emitindo.set(true);
     try {
       const senha = await this.api.post<Senha>('/fila/emitir', {
-        unidadeId: this.ehAdmin ? this.unidadeId : undefined,
+        unidadeId: this.unidadeId,
         subservicoId: this.subservicoId,
         prioridadeId: this.prioridadeId,
       });

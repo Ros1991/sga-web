@@ -12,9 +12,9 @@ import { Api, Autenticacao, DashboardResumo, Toasts, Unidade, mensagemDeErro } f
         <p class="sub">Acompanhamento do atendimento em tempo real</p>
       </div>
       <div class="filtros">
-        @if (ehAdmin) {
+        @if (ehAdmin || unidades().length > 1) {
           <select [(ngModel)]="unidadeId" (ngModelChange)="carregar()">
-            <option value="">Todas as unidades</option>
+            <option value="">{{ ehAdmin ? "Todas as unidades" : "Todas as minhas unidades" }}</option>
             @for (u of unidades(); track u.id) {
               <option [value]="u.id">{{ u.nome }}</option>
             }
@@ -75,7 +75,7 @@ import { Api, Autenticacao, DashboardResumo, Toasts, Unidade, mensagemDeErro } f
     .topo { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 22px;
       h2 { font-size: 24px; } .sub { color: var(--texto-3); margin: 4px 0 0; font-size: 14px; } }
     .filtros { display: flex; gap: 8px;
-      select, input { padding: 9px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font: 14px var(--fonte); background: #fff; } }
+      select, input { padding: 9px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font: 14px var(--fonte); background-color: #fff; } }
     .cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
     .kpi { display: grid; gap: 6px; padding: 18px;
       small { color: var(--texto-3); font-size: 12.5px; }
@@ -102,9 +102,7 @@ export class DashboardPagina implements OnInit, OnDestroy {
   ate = '';
 
   async ngOnInit() {
-    if (this.ehAdmin) {
-      this.unidades.set(await this.api.get<Unidade[]>('/unidades'));
-    }
+    this.unidades.set(await this.api.get<Unidade[]>('/unidades'));
     await this.carregar();
     this.timer = setInterval(() => this.carregar(), 60_000);
   }
