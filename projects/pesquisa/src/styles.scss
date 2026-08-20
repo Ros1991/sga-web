@@ -1,0 +1,5 @@
+@use '../../compartilhado/src/estilos/tokens' as *;
+
+body {
+  background: var(--fundo);
+}

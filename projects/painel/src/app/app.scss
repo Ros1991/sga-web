@@ -1,0 +1,290 @@
+:host {
+  display: block;
+  height: 100dvh;
+  background: var(--marinho);
+  color: #eef2f8;
+  overflow: hidden;
+}
+
+// ---------- Tela de erro ----------
+.tela-erro {
+  height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+
+  &__cartao {
+    background: var(--marinho-2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra-2);
+    padding: 48px 56px;
+    max-width: 640px;
+    text-align: center;
+
+    h1 {
+      font-size: 34px;
+      margin: 14px 0 12px;
+      color: #fff;
+    }
+
+    p {
+      margin: 0;
+      font-size: 19px;
+      color: #cdd8ea;
+    }
+  }
+
+  &__logo {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--azul);
+  }
+}
+
+.painel {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+// ---------- Topo ----------
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 36px;
+  background: var(--marinho-2);
+  border-bottom: 2px solid rgba(42, 112, 226, 0.45);
+  box-shadow: var(--sombra);
+
+  &__marca {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--azul);
+  }
+
+  h1 {
+    font-size: 34px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  &__relogio {
+    font-size: 56px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+  }
+}
+
+// ---------- Conteúdo ----------
+.conteudo {
+  flex: 1;
+  display: flex;
+  gap: 24px;
+  padding: 24px 36px;
+  min-height: 0;
+}
+
+// ---------- Últimas chamadas ----------
+.chamadas {
+  flex: 0 0 35%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--marinho-2);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 24px;
+
+  h2 {
+    font-size: 20px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--azul);
+    margin-bottom: 18px;
+  }
+
+  &__vazio {
+    color: #9fb0c9;
+    font-size: 18px;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--raio);
+    padding: 14px 20px;
+
+    .codigo {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .guiche {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--azul);
+
+      small {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #9fb0c9;
+      }
+    }
+
+    &.recente {
+      background: rgba(42, 112, 226, 0.22);
+      border-color: var(--azul);
+
+      .codigo { font-size: 52px; }
+      .guiche { font-size: 44px; color: #fff; }
+    }
+  }
+}
+
+// ---------- Mídia ----------
+.midia {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: #000;
+  border-radius: var(--raio);
+  box-shadow: var(--sombra-2);
+  overflow: hidden;
+  display: flex;
+
+  &__quadro {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    object-fit: cover;
+    display: block;
+  }
+
+  &__descanso {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    background: linear-gradient(160deg, var(--marinho-2), var(--marinho));
+  }
+
+  &__logo {
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--azul);
+  }
+
+  &__fila {
+    margin: 0;
+    font-size: 30px;
+    color: #cdd8ea;
+
+    strong {
+      display: block;
+      text-align: center;
+      font-size: 120px;
+      line-height: 1;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}
+
+// ---------- Rodapé ----------
+.rodape {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  padding: 12px 36px 18px;
+  font-size: 16px;
+  color: #9fb0c9;
+
+  strong { color: #eef2f8; }
+}
+
+// ---------- Destaque de chamada ----------
+.destaque {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 18, 32, 0.88);
+  animation: aparecer 0.25s ease-out;
+
+  &__caixa {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 60px 120px;
+    border-radius: 28px;
+    background: linear-gradient(160deg, var(--azul-escuro), var(--azul));
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+    animation: pulso 1.2s ease-in-out infinite;
+  }
+
+  &__rotulo {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  &__codigo {
+    font-size: 180px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__guiche {
+    font-size: 88px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.06em;
+  }
+}
+
+@keyframes pulso {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+
+@keyframes aparecer {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

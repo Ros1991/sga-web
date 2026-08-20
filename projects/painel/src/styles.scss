@@ -1,0 +1,11 @@
+@use '../../compartilhado/src/estilos/tokens' as *;
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--marinho);
+  color: #eef2f8;
+}

@@ -1,0 +1,196 @@
+// =====================================================================
+// SGA — tokens visuais e base compartilhada entre os 4 aplicativos.
+// Importe no styles.scss de cada app:
+//   @use '../../compartilhado/src/estilos/tokens' as *;
+// =====================================================================
+
+:root {
+  // Identidade DETRAN-DF
+  --azul: #2a70e2;
+  --azul-escuro: #1b4fa8;
+  --azul-suave: #e8f0fc;
+  --marinho: #16233a;
+  --marinho-2: #1e3050;
+
+  --verde: #1b7f4d;
+  --verde-suave: #e2f3ea;
+  --vermelho: #b4342a;
+  --vermelho-suave: #f8e5e3;
+  --ambar: #b8620a;
+  --ambar-suave: #f8ecd9;
+
+  --fundo: #f4f6fa;
+  --superficie: #ffffff;
+  --borda: #dbe1ea;
+  --texto: #1c2430;
+  --texto-2: #4a5568;
+  --texto-3: #8492a6;
+
+  --raio: 10px;
+  --sombra: 0 2px 10px rgba(22, 35, 58, 0.08);
+  --sombra-2: 0 8px 28px rgba(22, 35, 58, 0.16);
+  --fonte: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: var(--fonte);
+  background: var(--fundo);
+  color: var(--texto);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { margin: 0; line-height: 1.2; }
+
+// ---------- Botões ----------
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font: 600 14px/1 var(--fonte);
+  cursor: pointer;
+  background: var(--azul);
+  color: #fff;
+  transition: background .15s, transform .05s;
+
+  &:hover { background: var(--azul-escuro); }
+  &:active { transform: translateY(1px); }
+  &:disabled { opacity: .55; cursor: not-allowed; }
+
+  &--contorno {
+    background: transparent;
+    color: var(--azul);
+    border: 1.5px solid var(--azul);
+    &:hover { background: var(--azul-suave); }
+  }
+  &--perigo { background: var(--vermelho); &:hover { background: #93271f; } }
+  &--sucesso { background: var(--verde); &:hover { background: #14603a; } }
+  &--fantasma {
+    background: transparent;
+    color: var(--texto-2);
+    &:hover { background: var(--borda); }
+  }
+}
+
+// ---------- Formulários ----------
+.campo {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto-2);
+  }
+
+  input, select, textarea {
+    font: 14px var(--fonte);
+    padding: 10px 12px;
+    border: 1.5px solid var(--borda);
+    border-radius: 8px;
+    background: var(--superficie);
+    color: var(--texto);
+    outline: none;
+    width: 100%;
+
+    &:focus { border-color: var(--azul); box-shadow: 0 0 0 3px var(--azul-suave); }
+    &.invalido { border-color: var(--vermelho); }
+  }
+
+  .erro {
+    font-size: 12.5px;
+    color: var(--vermelho);
+  }
+}
+
+// ---------- Superfícies ----------
+.cartao {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 20px;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+
+  th {
+    text-align: left;
+    font-size: 11.5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--texto-3);
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--borda);
+  }
+  td {
+    padding: 12px;
+    border-bottom: 1px solid var(--borda);
+    vertical-align: middle;
+  }
+  tr:hover td { background: var(--fundo); }
+}
+
+.etiqueta {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--azul-suave);
+  color: var(--azul-escuro);
+
+  &--verde { background: var(--verde-suave); color: var(--verde); }
+  &--vermelha { background: var(--vermelho-suave); color: var(--vermelho); }
+  &--ambar { background: var(--ambar-suave); color: var(--ambar); }
+  &--cinza { background: var(--borda); color: var(--texto-2); }
+}
+
+// ---------- Modal ----------
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 35, 58, 0.5);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modal {
+  background: var(--superficie);
+  border-radius: 14px;
+  box-shadow: var(--sombra-2);
+  width: min(560px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 24px;
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    h3 { font-size: 18px; }
+  }
+}
+
+.acoes-modal {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}

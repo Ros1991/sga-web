@@ -3,6 +3,9 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "paths": {
+      "compartilhado": ["./projects/compartilhado/src/public-api.ts"]
+    },
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -21,5 +24,37 @@
     "strictInputAccessModifiers": true,
     "strictTemplates": true
   },
-  "files": []
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/portal/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/portal/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/totem/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/totem/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/painel/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/painel/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/pesquisa/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/pesquisa/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/compartilhado/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/compartilhado/tsconfig.spec.json"
+    }
+  ]
 }

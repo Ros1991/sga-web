@@ -1,0 +1,182 @@
+<main class="pagina">
+  @switch (estado()) {
+    @case ('carregando') {
+      <div class="centro">
+        <div class="girador" aria-hidden="true"></div>
+        <p class="centro__texto">Carregando pesquisa…</p>
+      </div>
+    }
+
+    @case ('nao-encontrada') {
+      <div class="centro cartao aviso">
+        <div class="aviso__icone aviso__icone--neutro" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+        </div>
+        <h1>Pesquisa não encontrada ou encerrada.</h1>
+        <p>Verifique o QR Code no guichê e tente novamente.</p>
+      </div>
+    }
+
+    @case ('formulario') {
+      @if (pesquisa(); as p) {
+        <header class="cabecalho">
+          <span class="cabecalho__marca">DETRAN-DF</span>
+          <h1>{{ p.nome }}</h1>
+          <p>{{ p.unidade }}</p>
+        </header>
+
+        <section class="progresso" aria-label="Progresso da pesquisa">
+          <div class="progresso__rotulo">
+            <span>Pergunta {{ indice() + 1 }} de {{ perguntas().length }}</span>
+            <span>{{ progresso() }}%</span>
+          </div>
+          <div class="progresso__trilha">
+            <div class="progresso__barra" [style.width.%]="progresso()"></div>
+          </div>
+        </section>
+
+        @if (perguntaAtual(); as pergunta) {
+          <section class="cartao pergunta">
+            <h2 class="pergunta__texto">{{ pergunta.texto }}</h2>
+            @if (!pergunta.obrigatoria) {
+              <span class="pergunta__opcional">Opcional</span>
+            }
+
+            @switch (pergunta.tipo) {
+              @case ('NOTA') {
+                <div class="notas" role="group" [attr.aria-label]="pergunta.texto">
+                  @for (nota of notas(); track nota) {
+                    <button
+                      type="button"
+                      class="notas__botao"
+                      [class.notas__botao--ativo]="valorSelecionado(pergunta.id) === '' + nota"
+                      (click)="responder('' + nota)"
+                    >
+                      {{ nota }}
+                    </button>
+                  }
+                </div>
+                <div class="notas__legenda">
+                  <span>Muito ruim</span>
+                  <span>Excelente</span>
+                </div>
+              }
+
+              @case ('SIM_NAO') {
+                <div class="sim-nao">
+                  <button
+                    type="button"
+                    class="sim-nao__botao sim-nao__botao--sim"
+                    [class.sim-nao__botao--ativo]="valorSelecionado(pergunta.id) === 'true'"
+                    (click)="responder('true')"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    Sim
+                  </button>
+                  <button
+                    type="button"
+                    class="sim-nao__botao sim-nao__botao--nao"
+                    [class.sim-nao__botao--ativo]="valorSelecionado(pergunta.id) === 'false'"
+                    (click)="responder('false')"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                    Não
+                  </button>
+                </div>
+              }
+
+              @case ('TEXTO') {
+                <div class="campo texto-livre">
+                  <textarea
+                    rows="5"
+                    placeholder="Escreva aqui sua resposta…"
+                    [value]="textoAtual()"
+                    (input)="textoAtual.set($any($event.target).value)"
+                  ></textarea>
+                </div>
+                <div class="texto-livre__acoes">
+                  @if (!pergunta.obrigatoria) {
+                    <button type="button" class="botao botao--fantasma botao-alto" (click)="pular()">
+                      Pular
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="botao botao-alto"
+                    [disabled]="pergunta.obrigatoria && !textoAtual().trim()"
+                    (click)="enviarTexto()"
+                  >
+                    Enviar
+                  </button>
+                </div>
+              }
+            }
+          </section>
+
+          @if (indice() > 0) {
+            <button type="button" class="voltar" (click)="voltar()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              Voltar à pergunta anterior
+            </button>
+          }
+        }
+      }
+    }
+
+    @case ('enviando') {
+      <div class="centro">
+        <div class="girador" aria-hidden="true"></div>
+        <p class="centro__texto">Enviando suas respostas…</p>
+      </div>
+    }
+
+    @case ('sucesso') {
+      <div class="centro cartao aviso">
+        <div class="aviso__icone aviso__icone--verde" aria-hidden="true">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </div>
+        <h1>Obrigado por avaliar nosso atendimento!</h1>
+        <p>Sua opinião ajuda o DETRAN-DF a melhorar cada vez mais.</p>
+      </div>
+    }
+
+    @case ('ja-respondida') {
+      <div class="centro cartao aviso">
+        <div class="aviso__icone aviso__icone--verde" aria-hidden="true">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </div>
+        <h1>Você já respondeu esta pesquisa. Obrigado!</h1>
+        <p>Cada dispositivo pode responder apenas uma vez.</p>
+      </div>
+    }
+
+    @case ('erro') {
+      <div class="centro cartao aviso">
+        <div class="aviso__icone aviso__icone--vermelho" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v6M12 16.5h.01" />
+          </svg>
+        </div>
+        <h1>Não foi possível concluir</h1>
+        <p>{{ mensagemErro() }}</p>
+        <button type="button" class="botao botao-alto aviso__acao" (click)="tentarDeNovo()">
+          Tentar de novo
+        </button>
+      </div>
+    }
+  }
+</main>
