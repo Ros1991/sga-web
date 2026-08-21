@@ -9,3 +9,6 @@ body {
   background: var(--marinho);
   color: #eef2f8;
 }
+
+// Identidade do portal-digital: marca em Khand
+.topo__marca, .midia__logo, .tela-erro__logo { font-family: var(--fonte-marca) !important; letter-spacing: .02em; }

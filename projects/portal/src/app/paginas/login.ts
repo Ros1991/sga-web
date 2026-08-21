@@ -11,9 +11,8 @@ import { rotaInicial } from '../guards';
     <div class="fundo">
       <form class="cartao caixa" (ngSubmit)="entrar()">
         <div class="marca">
-          <span class="sigla">SGA</span>
-          <h1>Sistema de Gestão<br />de Atendimento</h1>
-          <p>DETRAN-DF</p>
+          <span class="detran"><strong>DETRAN</strong>&nbsp;- DF</span>
+          <h1>Sistema de Gestão de Atendimento</h1>
         </div>
 
         <div class="campo">
@@ -37,13 +36,12 @@ import { rotaInicial } from '../guards';
   `,
   styles: [`
     .fundo { min-height: 100vh; display: grid; place-items: center;
-      background: linear-gradient(150deg, var(--marinho) 0%, var(--marinho-2) 55%, var(--azul-escuro) 100%); }
-    .caixa { width: min(400px, 92vw); padding: 36px; }
+      background: var(--fundo) url('/main_back.png') no-repeat top center / cover; }
+    .caixa { width: min(410px, 92vw); padding: 36px; border-radius: 10px; }
     .marca { text-align: center; margin-bottom: 26px;
-      .sigla { display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 16px;
-        background: var(--azul); color: #fff; font: 800 22px var(--fonte); margin-bottom: 12px; }
-      h1 { font-size: 19px; color: var(--marinho); }
-      p { margin: 4px 0 0; color: var(--texto-3); font-size: 13px; letter-spacing: .12em; }
+      .detran { font-family: var(--fonte-marca); font-size: 34px; color: var(--azul);
+        strong { font-weight: 700; } }
+      h1 { font-size: 15px; font-weight: 400; color: var(--texto-2); margin-top: 6px; }
     }
     .inteiro { width: 100%; margin-top: 6px; padding: 13px; }
     .alerta { background: var(--vermelho-suave); color: var(--vermelho); border-radius: 8px;

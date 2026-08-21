@@ -1,35 +1,45 @@
 // =====================================================================
-// SGA — tokens visuais e base compartilhada entre os 4 aplicativos.
+// SGA — tokens visuais compartilhados entre os 4 aplicativos.
+// Paleta e tipografia alinhadas ao Portal de Serviços do DETRAN-DF
+// (portal-digital: colours.scss / styles.scss), para manter a mesma
+// identidade visual do ecossistema.
 // Importe no styles.scss de cada app:
 //   @use '../../compartilhado/src/estilos/tokens' as *;
 // =====================================================================
 
 :root {
-  // Identidade DETRAN-DF
-  --azul: #2a70e2;
-  --azul-escuro: #1b4fa8;
-  --azul-suave: #e8f0fc;
-  --marinho: #16233a;
-  --marinho-2: #1e3050;
+  // ---- Paleta do portal-digital (colours.scss) ----
+  --azul: #2a70e2;              // $primary-text-color
+  --azul-escuro: #1d3451;       // $bluedark-text-color
+  --azul-medio: #3d5879;        // $blueregular-text-color
+  --azul-suave: #e9eef7;        // $light-blue-background
+  --azul-borda: #a1d2ff;        // $blue-border
+  --marinho: #111725;           // $black-background-color (painel/TV)
+  --marinho-2: #262e3b;         // $bluedark-background-color
 
-  --verde: #1b7f4d;
-  --verde-suave: #e2f3ea;
-  --vermelho: #b4342a;
-  --vermelho-suave: #f8e5e3;
-  --ambar: #b8620a;
-  --ambar-suave: #f8ecd9;
+  --verde: #287d3c;             // $success-dark
+  --verde-vivo: #00cd9d;        // $success-main
+  --verde-suave: #ecf9f0;       // $success-secondary
+  --vermelho: #da1415;          // $error-dark / $danger-text-color
+  --vermelho-suave: #feefef;    // $error-secondary
+  --ambar: #b95000;             // $alert-dark
+  --ambar-vivo: #f9c866;        // $alert-main
+  --ambar-suave: #fef4ec;       // $alert-secondary
 
-  --fundo: #f4f6fa;
+  --fundo: #f7f9fc;             // $soft-blue-background
   --superficie: #ffffff;
-  --borda: #dbe1ea;
-  --texto: #1c2430;
-  --texto-2: #4a5568;
-  --texto-3: #8492a6;
+  --borda: #dfe5ee;             // $grey-border-color
+  --borda-2: #e4eaf2;
+  --texto: #1d3451;
+  --texto-2: #3d5879;
+  --texto-3: #8398b3;           // $secondary-text-color
 
-  --raio: 10px;
-  --sombra: 0 2px 10px rgba(22, 35, 58, 0.08);
-  --sombra-2: 0 8px 28px rgba(22, 35, 58, 0.16);
-  --fonte: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --raio: 6px;                  // cantos discretos, como no portal
+  --sombra: 0 2px 8px rgba(29, 52, 81, 0.06);
+  --sombra-2: 0 8px 28px rgba(29, 52, 81, 0.16);
+  --fonte: Roboto, 'Helvetica Neue', 'Segoe UI', sans-serif;
+  --fonte-marca: 'Khand', Roboto, sans-serif;   // título "DETRAN - DF"
+  --largura-conteudo: 1280px;   // wrapper central do portal
 }
 
 * { box-sizing: border-box; }
@@ -45,48 +55,50 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4 { margin: 0; line-height: 1.2; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.2; color: var(--azul-escuro); }
 
 // Selects: seta customizada com respiro da borda direita (a nativa cola no canto)
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%234a5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%233d5879' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px !important;
 }
 
-// ---------- Botões ----------
+// ---------- Botões (forms-wrapper-primaryButton / strokedButton do portal) ----------
 .botao {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border: 0;
-  border-radius: 8px;
-  padding: 10px 18px;
-  font: 600 14px/1 var(--fonte);
+  border-radius: var(--raio);
+  padding: 0 22px;
+  min-height: 44px;
+  font: 500 14px/1 var(--fonte);
   cursor: pointer;
   background: var(--azul);
   color: #fff;
-  transition: background .15s, transform .05s;
+  transition: filter .15s, transform .05s;
 
-  &:hover { background: var(--azul-escuro); }
+  &:hover { filter: brightness(0.92); }
   &:active { transform: translateY(1px); }
   &:disabled { opacity: .55; cursor: not-allowed; }
 
   &--contorno {
-    background: transparent;
+    background: #fff;
     color: var(--azul);
-    border: 1.5px solid var(--azul);
-    &:hover { background: var(--azul-suave); }
+    border: 1px solid var(--azul);
+    &:hover { background: var(--azul-suave); filter: none; }
   }
-  &--perigo { background: var(--vermelho); &:hover { background: #93271f; } }
-  &--sucesso { background: var(--verde); &:hover { background: #14603a; } }
+  &--perigo { background: var(--vermelho); }
+  &--sucesso { background: var(--verde); }
   &--fantasma {
     background: transparent;
-    color: var(--texto-2);
-    &:hover { background: var(--borda); }
+    color: var(--azul-medio);
+    min-height: 36px;
+    &:hover { background: var(--azul-suave); filter: none; }
   }
 }
 
@@ -98,15 +110,15 @@ select {
 
   label {
     font-size: 13px;
-    font-weight: 600;
-    color: var(--texto-2);
+    font-weight: 500;
+    color: var(--azul-medio);
   }
 
   input, select, textarea {
     font: 14px var(--fonte);
-    padding: 10px 12px;
-    border: 1.5px solid var(--borda);
-    border-radius: 8px;
+    padding: 11px 12px;
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
     background-color: var(--superficie);
     color: var(--texto);
     outline: none;
@@ -125,7 +137,7 @@ select {
 // ---------- Superfícies ----------
 .cartao {
   background: var(--superficie);
-  border: 1px solid var(--borda);
+  border: 1px solid var(--borda-2);
   border-radius: var(--raio);
   box-shadow: var(--sombra);
   padding: 20px;
@@ -144,11 +156,14 @@ select {
     color: var(--texto-3);
     padding: 10px 12px;
     border-bottom: 2px solid var(--borda);
+    background: var(--fundo);
   }
   td {
     padding: 12px;
-    border-bottom: 1px solid var(--borda);
+    border-bottom: 1px solid var(--borda-2);
     vertical-align: middle;
+    color: var(--texto-2);
+    strong { color: var(--azul-escuro); }
   }
   tr:hover td { background: var(--fundo); }
 }
@@ -156,23 +171,24 @@ select {
 .etiqueta {
   display: inline-block;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 3px 10px;
   border-radius: 99px;
   background: var(--azul-suave);
-  color: var(--azul-escuro);
+  color: var(--azul);
+  border: 1px solid var(--azul-borda);
 
-  &--verde { background: var(--verde-suave); color: var(--verde); }
-  &--vermelha { background: var(--vermelho-suave); color: var(--vermelho); }
-  &--ambar { background: var(--ambar-suave); color: var(--ambar); }
-  &--cinza { background: var(--borda); color: var(--texto-2); }
+  &--verde { background: var(--verde-suave); color: var(--verde); border-color: #98e39f; }
+  &--vermelha { background: var(--vermelho-suave); color: var(--vermelho); border-color: #f5b5b5; }
+  &--ambar { background: var(--ambar-suave); color: var(--ambar); border-color: var(--ambar-vivo); }
+  &--cinza { background: var(--fundo); color: var(--texto-3); border-color: var(--borda); }
 }
 
 // ---------- Modal ----------
 .modal-fundo {
   position: fixed;
   inset: 0;
-  background: rgba(22, 35, 58, 0.5);
+  background: rgba(17, 23, 37, 0.55);
   display: grid;
   place-items: center;
   z-index: 100;
@@ -181,7 +197,7 @@ select {
 
 .modal {
   background: var(--superficie);
-  border-radius: 14px;
+  border-radius: 10px;
   box-shadow: var(--sombra-2);
   width: min(560px, 100%);
   max-height: 90vh;

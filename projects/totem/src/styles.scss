@@ -1,1 +1,4 @@
 @use '../../compartilhado/src/estilos/tokens' as *;
+
+// Identidade do portal-digital: marca e títulos em Khand
+.cabecalho__unidade { font-family: var(--fonte-marca) !important; letter-spacing: .02em; color: var(--azul) !important; }

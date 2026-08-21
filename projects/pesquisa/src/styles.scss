@@ -3,3 +3,6 @@
 body {
   background: var(--fundo);
 }
+
+// Identidade do portal-digital: marca em Khand
+.cabecalho__marca, .inicio__rodape { font-family: var(--fonte-marca) !important; letter-spacing: .02em; }
