@@ -1,7 +1,7 @@
 @if (erro(); as mensagem) {
   <div class="tela-erro">
     <div class="tela-erro__cartao">
-      <span class="tela-erro__logo">SGA · DETRAN-DF</span>
+      <span class="tela-erro__logo"><strong>DETRAN</strong>&nbsp;- DF</span>
       <h1>Painel não ativado</h1>
       <p>{{ mensagem }}</p>
     </div>
@@ -9,69 +9,80 @@
 } @else if (config(); as cfg) {
   <div class="painel">
     <header class="topo">
-      <div class="topo__unidade">
-        <span class="topo__marca">SGA · DETRAN-DF</span>
-        <h1>{{ cfg.unidadeNome }}</h1>
-      </div>
+      <div class="topo__marca"><strong>DETRAN</strong>&nbsp;- DF <span class="selo">SGA</span></div>
+      <div class="topo__unidade">{{ cfg.unidadeNome }}</div>
       <div class="topo__relogio">{{ hora() }}</div>
     </header>
 
     <main class="conteudo">
-      <section class="chamadas">
-        <h2>Últimas chamadas</h2>
-        @if (ultimas().length === 0) {
-          <p class="chamadas__vazio">Nenhuma chamada até o momento.</p>
-        }
-        <ul>
-          @for (senha of ultimas(); track senha.id; let primeira = $first) {
-            <li [class.recente]="primeira">
-              <span class="codigo">{{ senha.codigo }}</span>
-              <span class="guiche">
-                <small>Guichê</small>
-                {{ senha.guiche ?? '—' }}
-              </span>
-            </li>
+      <aside class="lateral">
+        <section class="chamada-atual" [class.vazia]="!ultimaChamada()">
+          <span class="rotulo">Senha chamada</span>
+          @if (ultimaChamada(); as s) {
+            <span class="codigo">{{ s.codigo }}</span>
+            <span class="guiche">GUICHÊ <strong>{{ s.guiche ?? '—' }}</strong></span>
+          } @else {
+            <span class="aguarde">Aguardando a primeira chamada</span>
           }
-        </ul>
-      </section>
+        </section>
+
+        <section class="historico">
+          <h2>Últimas chamadas</h2>
+          <ul>
+            @for (senha of anteriores(); track senha.id) {
+              <li>
+                <span class="codigo">{{ senha.codigo }}</span>
+                <span class="guiche">Guichê {{ senha.guiche ?? '—' }}</span>
+              </li>
+            } @empty {
+              <li class="vazio">—</li>
+            }
+          </ul>
+        </section>
+      </aside>
 
       <section class="midia">
         @if (midia(); as m) {
-          @switch (m.tipo) {
-            @case ('YOUTUBE') {
-              @if (midiaUrl(); as url) {
-                <iframe
-                  class="midia__quadro"
-                  [src]="url"
-                  title="{{ m.titulo }}"
-                  frameborder="0"
-                  allow="autoplay; encrypted-media"
-                  allowfullscreen
-                ></iframe>
+          <div class="midia__moldura">
+            @switch (m.tipo) {
+              @case ('YOUTUBE') {
+                @if (midiaUrl(); as url) {
+                  <iframe
+                    class="midia__conteudo"
+                    [src]="url"
+                    title="{{ m.titulo }}"
+                    frameborder="0"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                  ></iframe>
+                }
+              }
+              @case ('IMAGEM') {
+                <img class="midia__conteudo" [src]="m.url" [alt]="m.titulo" />
+              }
+              @case ('VIDEO') {
+                <video class="midia__conteudo" [src]="m.url" autoplay muted loop playsinline></video>
               }
             }
-            @case ('IMAGEM') {
-              <img class="midia__quadro" [src]="m.url" [alt]="m.titulo" />
-            }
-            @case ('VIDEO') {
-              <video class="midia__quadro" [src]="m.url" autoplay muted loop playsinline></video>
-            }
-          }
+          </div>
         } @else {
           <div class="midia__descanso">
-            <span class="midia__logo">SGA · DETRAN-DF</span>
-            <p class="midia__fila">
+            <span class="marca"><strong>DETRAN</strong>&nbsp;- DF</span>
+            <p class="fila-grande">
               <strong>{{ fila()?.totais?.aguardando ?? 0 }}</strong>
               {{ (fila()?.totais?.aguardando ?? 0) === 1 ? 'senha na fila' : 'senhas na fila' }}
             </p>
+            <p class="dica">Acompanhe sua senha por este painel</p>
           </div>
         }
       </section>
     </main>
 
     <footer class="rodape">
-      <span>Emitidas hoje: <strong>{{ fila()?.totais?.emitidas ?? 0 }}</strong></span>
-      <span>Finalizadas hoje: <strong>{{ fila()?.totais?.finalizadas ?? 0 }}</strong></span>
+      <span class="rodape__stat">Na fila <strong>{{ fila()?.totais?.aguardando ?? 0 }}</strong></span>
+      <span class="rodape__stat">Emitidas hoje <strong>{{ fila()?.totais?.emitidas ?? 0 }}</strong></span>
+      <span class="rodape__stat">Atendidas hoje <strong>{{ fila()?.totais?.finalizadas ?? 0 }}</strong></span>
+      <span class="rodape__data">{{ dataHoje }}</span>
     </footer>
 
     @if (destaque(); as senha) {
