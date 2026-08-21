@@ -101,9 +101,11 @@
   }
   .codigo {
     font-family: var(--fonte-marca);
-    font-size: clamp(84px, 9vw, 132px);
+    font-size: clamp(56px, 7.2vw, 124px);
     font-weight: 700;
     line-height: 1;
+    white-space: nowrap;
+    max-width: 100%;
   }
   .guiche {
     font-size: 26px;
