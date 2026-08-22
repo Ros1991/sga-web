@@ -94,15 +94,16 @@ export class EmitirPagina implements OnInit {
   prioridadeId = '';
 
   async ngOnInit() {
-    this.prioridades.set((await this.api.get<NivelPrioridade[]>('/prioridades')).filter((p) => p.ativo).sort((a, b) => a.nivel - b.nivel));
+    this.prioridades.set((await this.api.get<NivelPrioridade[]>('/prioridades')).filter((p) => p.ativo).sort((a, b) => b.nivel - a.nivel));
     // /unidades já vem filtrada por lotação para quem não é admin
     this.unidades.set(await this.api.get<Unidade[]>('/unidades'));
     if (this.unidades().length === 1) {
       this.unidadeId = this.unidades()[0].id;
       await this.carregarUnidade();
     }
-    const normal = this.prioridades().find((p) => p.nivel === 0);
-    if (normal) this.prioridadeId = normal.id;
+    // Semântica do DETRAN: menor nível = mais prioritário; o padrão é o de MAIOR nível (público em geral)
+    const padrao = this.prioridades()[0];
+    if (padrao) this.prioridadeId = padrao.id;
   }
 
   async carregarUnidade() {

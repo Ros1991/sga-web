@@ -70,32 +70,19 @@
         <p class="cabecalho__subtitulo">Selecione o tipo de atendimento</p>
       </header>
 
-      @if (prioridadeNormal(); as normal) {
-        <button
-          type="button"
-          class="cartao-toque cartao-toque--destaque"
-          [disabled]="emitindo()"
-          (click)="emitirSenha(normal)"
-        >
-          {{ normal.nome }}
-        </button>
-      }
-
-      @if (prioridadesEspeciais().length > 0) {
-        <p class="rotulo-prioridade">Atendimento priorit&aacute;rio</p>
-        <div class="grade grade--compacta">
-          @for (prioridade of prioridadesEspeciais(); track prioridade.id) {
-            <button
-              type="button"
-              class="cartao-toque cartao-toque--menor"
-              [disabled]="emitindo()"
-              (click)="emitirSenha(prioridade)"
-            >
-              {{ prioridade.nome }}
-            </button>
-          }
-        </div>
-      }
+      <div class="lista-prioridades">
+        @for (prioridade of prioridadesOrdenadas(); track prioridade.id; let primeira = $first) {
+          <button
+            type="button"
+            class="cartao-toque cartao-toque--linha"
+            [class.cartao-toque--destaque]="primeira"
+            [disabled]="emitindo()"
+            (click)="emitirSenha(prioridade)"
+          >
+            {{ prioridade.nome }}
+          </button>
+        }
+      </div>
 
       <button type="button" class="botao-voltar" (click)="voltarParaSubservicos()">
         &#8592; Voltar

@@ -35,16 +35,13 @@ export class App implements OnInit, OnDestroy {
 
   protected readonly servicos = computed(() => this.config()?.servicos ?? []);
 
+  /**
+   * Semântica do DETRAN: menor nível = maior prioridade.
+   * No totem a lista vai do MAIOR nível (público em geral) no topo ao
+   * menor (mais prioritário) embaixo.
+   */
   protected readonly prioridadesOrdenadas = computed<NivelPrioridade[]>(() =>
-    [...(this.config()?.prioridades ?? [])].sort((a, b) => a.nivel - b.nivel),
-  );
-
-  protected readonly prioridadeNormal = computed(
-    () => this.prioridadesOrdenadas().find((p) => p.nivel === 0) ?? null,
-  );
-
-  protected readonly prioridadesEspeciais = computed(() =>
-    this.prioridadesOrdenadas().filter((p) => p.nivel !== 0),
+    [...(this.config()?.prioridades ?? [])].sort((a, b) => b.nivel - a.nivel),
   );
 
   private temporizador: ReturnType<typeof setInterval> | null = null;

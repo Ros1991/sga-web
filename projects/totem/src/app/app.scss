@@ -215,3 +215,17 @@
   padding: 18px 40px;
   border-radius: var(--raio);
 }
+
+// Prioridades em lista vertical (maior nível no topo, mais prioritário embaixo)
+.lista-prioridades {
+  display: grid;
+  gap: 14px;
+  width: min(760px, 100%);
+  margin: 0 auto;
+}
+.cartao-toque--linha {
+  min-height: 84px;
+  font-size: 26px;
+  text-align: center;
+  padding: 0 28px;
+}
