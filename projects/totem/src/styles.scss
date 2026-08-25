@@ -2,3 +2,9 @@
 
 // Identidade do portal-digital: marca e títulos em Khand
 .cabecalho__unidade { font-family: var(--fonte-marca) !important; letter-spacing: .02em; color: var(--azul) !important; }
+
+// Página térmica 80mm — precisa ser global (regras @page são ignoradas
+// dentro de estilos com escopo de componente)
+@media print {
+  @page { size: 80mm auto; margin: 0; }
+}

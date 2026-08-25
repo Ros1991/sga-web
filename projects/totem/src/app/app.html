@@ -96,10 +96,30 @@
       <div class="senha__codigo">{{ senha()?.codigo }}</div>
       <p class="senha__servico">{{ subservicoEscolhido()?.nome }}</p>
       <p class="senha__instrucao">Guarde sua senha e acompanhe o painel</p>
+      <button type="button" class="botao-imprimir" (click)="imprimir()">Imprimir senha</button>
       <p class="senha__contagem">Voltando ao in&iacute;cio em {{ contagem() }}s</p>
       <button type="button" class="botao botao-outra" (click)="recomecar()">
         Emitir outra senha
       </button>
     </div>
   }
+}
+
+<!-- Cupom térmico (80mm): invisível na tela; única área visível na impressão -->
+@if (senha(); as s) {
+  <section class="cupom" aria-hidden="true">
+    <div class="cupom__marca"><strong>DETRAN</strong> - DF</div>
+    <div class="cupom__unidade">{{ config()?.unidadeNome }}</div>
+    <hr class="cupom__linha" />
+    <div class="cupom__rotulo">SENHA</div>
+    <div class="cupom__codigo">{{ s.codigo }}</div>
+    <div class="cupom__servico">{{ servicoEscolhido()?.nome }}</div>
+    <div class="cupom__subservico">{{ subservicoEscolhido()?.nome }}</div>
+    @if (prioridadeEscolhida(); as p) {
+      <div class="cupom__prioridade">{{ p.nome }}</div>
+    }
+    <hr class="cupom__linha" />
+    <div class="cupom__data">{{ formatarEmissao(s.emitidaEm) }}</div>
+    <div class="cupom__aviso">Acompanhe o painel de chamadas</div>
+  </section>
 }

@@ -229,3 +229,49 @@
   text-align: center;
   padding: 0 28px;
 }
+
+// ---------- Botão de impressão manual ----------
+.botao-imprimir {
+  margin-top: 10px;
+  min-height: 56px;
+  padding: 0 32px;
+  font: 500 20px var(--fonte);
+  color: var(--azul);
+  background: #fff;
+  border: 1px solid var(--azul);
+  border-radius: var(--raio);
+  cursor: pointer;
+  &:hover { background: var(--azul-suave); }
+}
+
+// ---------- Cupom térmico 80mm ----------
+// Na tela: escondido. Na impressão: única coisa visível.
+.cupom { display: none; }
+
+@media print {
+  @page { size: 80mm auto; margin: 0; }
+
+  :host, body { background: #fff !important; }
+  .tela-cheia, .botao-imprimir { display: none !important; }
+
+  .cupom {
+    display: block;
+    width: 72mm;
+    margin: 0 auto;
+    padding: 4mm 2mm 8mm;
+    text-align: center;
+    color: #000;
+    font-family: var(--fonte);
+
+    &__marca { font-family: var(--fonte-marca); font-size: 22px; strong { font-weight: 700; } }
+    &__unidade { font-size: 12px; margin-top: 1mm; }
+    &__linha { border: 0; border-top: 1px dashed #000; margin: 3mm 0; }
+    &__rotulo { font-size: 11px; letter-spacing: .3em; }
+    &__codigo { font-family: var(--fonte-marca); font-size: 46px; font-weight: 700; line-height: 1.1; }
+    &__servico { font-size: 13px; font-weight: 700; margin-top: 2mm; }
+    &__subservico { font-size: 12px; }
+    &__prioridade { font-size: 11px; border: 1px solid #000; border-radius: 3mm; display: inline-block; padding: 0.5mm 3mm; margin-top: 1.5mm; }
+    &__data { font-size: 11px; }
+    &__aviso { font-size: 10px; margin-top: 2mm; }
+  }
+}

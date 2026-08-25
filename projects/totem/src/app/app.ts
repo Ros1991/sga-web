@@ -31,6 +31,17 @@ export class App implements OnInit, OnDestroy {
   protected readonly subservicoEscolhido = signal<SubservicoTotem | null>(null);
   protected readonly emitindo = signal(false);
   protected readonly senha = signal<Senha | null>(null);
+  protected readonly prioridadeEscolhida = signal<NivelPrioridade | null>(null);
+  protected readonly impressaoAtiva = signal(false);
+
+  protected imprimir(): void {
+    window.print();
+  }
+
+  protected formatarEmissao(iso?: string): string {
+    const d = iso ? new Date(iso) : new Date();
+    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
   protected readonly contagem = signal(8);
 
   protected readonly servicos = computed(() => this.config()?.servicos ?? []);
@@ -47,6 +58,15 @@ export class App implements OnInit, OnDestroy {
   private temporizador: ReturnType<typeof setInterval> | null = null;
 
   async ngOnInit(): Promise<void> {
+    // Impressão térmica: ative com &imprimir=1 na URL de ativação (persiste
+    // como o token). No quiosque, rode o Chrome com --kiosk --kiosk-printing
+    // para o window.print() sair direto na impressora padrão, sem diálogo.
+    const params = new URLSearchParams(location.search);
+    if (params.has('imprimir')) {
+      localStorage.setItem('sga_totem_imprimir', params.get('imprimir') === '0' ? '' : '1');
+    }
+    this.impressaoAtiva.set(localStorage.getItem('sga_totem_imprimir') === '1');
+
     const config = await this.sessao.iniciar();
     if (!config) {
       this.tela.set('erro');
@@ -97,9 +117,14 @@ export class App implements OnInit, OnDestroy {
         { subservicoId: subservico.id, prioridadeId: prioridade.id },
         this.sessao.headers(),
       );
+      this.prioridadeEscolhida.set(prioridade);
       this.senha.set(senha);
       this.tela.set('senha');
       this.iniciarContagem();
+      if (this.impressaoAtiva()) {
+        // pequeno atraso para o cupom renderizar antes do print
+        setTimeout(() => this.imprimir(), 350);
+      }
     } catch (erro) {
       this.toasts.erro(mensagemDeErro(erro));
       // permanece na tela de prioridade para nova tentativa
