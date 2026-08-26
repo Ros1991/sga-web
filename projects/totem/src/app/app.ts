@@ -58,14 +58,15 @@ export class App implements OnInit, OnDestroy {
   private temporizador: ReturnType<typeof setInterval> | null = null;
 
   async ngOnInit(): Promise<void> {
-    // Impressão térmica: ative com &imprimir=1 na URL de ativação (persiste
-    // como o token). No quiosque, rode o Chrome com --kiosk --kiosk-printing
-    // para o window.print() sair direto na impressora padrão, sem diálogo.
+    // Impressão térmica: SEMPRE imprime ao emitir a senha. No quiosque, rode
+    // o Chrome com --kiosk --kiosk-printing para o window.print() sair direto
+    // na impressora padrão, sem diálogo. Para testar sem impressora, ative o
+    // totem com &imprimir=0 (persiste como o token).
     const params = new URLSearchParams(location.search);
     if (params.has('imprimir')) {
-      localStorage.setItem('sga_totem_imprimir', params.get('imprimir') === '0' ? '' : '1');
+      localStorage.setItem('sga_totem_imprimir', params.get('imprimir') === '0' ? '0' : '1');
     }
-    this.impressaoAtiva.set(localStorage.getItem('sga_totem_imprimir') === '1');
+    this.impressaoAtiva.set(localStorage.getItem('sga_totem_imprimir') !== '0');
 
     const config = await this.sessao.iniciar();
     if (!config) {

@@ -230,20 +230,6 @@
   padding: 0 28px;
 }
 
-// ---------- Botão de impressão manual ----------
-.botao-imprimir {
-  margin-top: 10px;
-  min-height: 56px;
-  padding: 0 32px;
-  font: 500 20px var(--fonte);
-  color: var(--azul);
-  background: #fff;
-  border: 1px solid var(--azul);
-  border-radius: var(--raio);
-  cursor: pointer;
-  &:hover { background: var(--azul-suave); }
-}
-
 // ---------- Cupom térmico 80mm ----------
 // Na tela: escondido. Na impressão: única coisa visível.
 .cupom { display: none; }
@@ -252,7 +238,7 @@
   @page { size: 80mm auto; margin: 0; }
 
   :host, body { background: #fff !important; }
-  .tela-cheia, .botao-imprimir { display: none !important; }
+  .tela-cheia { display: none !important; }
 
   .cupom {
     display: block;
