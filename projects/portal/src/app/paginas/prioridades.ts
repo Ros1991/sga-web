@@ -9,19 +9,23 @@ import { Api, NivelPrioridade, Toasts, mensagemDeErro } from 'compartilhado';
     <header class="topo">
       <div>
         <h2>Níveis de prioridade</h2>
-        <p class="sub">Quanto maior o nível, antes a senha é chamada</p>
+        <p class="sub">Quanto MENOR o nível, antes a senha é chamada</p>
       </div>
       <button class="botao" (click)="abrirNovo()">+ Novo nível</button>
     </header>
 
     <div class="cartao">
       <table class="tabela">
-        <thead><tr><th>Nome</th><th>Nível</th><th>Sufixo na senha</th><th>Situação</th><th></th></tr></thead>
+        <thead><tr><th>Nome</th><th>Nível</th><th>Cor no painel</th><th>Sufixo na senha</th><th>Situação</th><th></th></tr></thead>
         <tbody>
           @for (p of prioridades(); track p.id) {
             <tr>
               <td><strong>{{ p.nome }}</strong></td>
               <td>{{ p.nivel }}</td>
+              <td>
+                <span class="amostra" [style.background]="p.cor"></span>
+                <span class="cor-codigo">{{ p.cor }}</span>
+              </td>
               <td>{{ p.prefixo || '—' }}</td>
               <td>
                 <span class="etiqueta" [class.etiqueta--verde]="p.ativo" [class.etiqueta--cinza]="!p.ativo">
@@ -51,6 +55,14 @@ import { Api, NivelPrioridade, Toasts, mensagemDeErro } from 'compartilhado';
               <input [(ngModel)]="form.prefixo" name="prefixo" maxlength="2" style="text-transform: uppercase" />
             </div>
           </div>
+          <div class="campo">
+            <label>Cor da fonte no painel</label>
+            <div class="cor-linha">
+              <input type="color" [(ngModel)]="form.cor" name="cor" />
+              <span class="cor-codigo">{{ form.cor }}</span>
+            </div>
+            <small class="ajuda">Cor do c&oacute;digo da senha na TV ao chamar (ex.: priorit&aacute;rio vermelho, comum verde)</small>
+          </div>
           @if (editando) {
             <div class="campo"><label>Situação</label>
               <select [(ngModel)]="form.ativo" name="ativo">
@@ -71,6 +83,10 @@ import { Api, NivelPrioridade, Toasts, mensagemDeErro } from 'compartilhado';
       h2 { font-size: 24px; } .sub { color: var(--texto-3); margin: 4px 0 0; font-size: 14px; } }
     .direita { text-align: right; }
     .linha { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .amostra { display: inline-block; width: 16px; height: 16px; border-radius: 4px; vertical-align: -3px; margin-right: 8px; border: 1px solid var(--borda); }
+    .cor-codigo { font-family: monospace; font-size: 13px; color: var(--texto-2); }
+    .cor-linha { display: flex; align-items: center; gap: 10px; }
+    .cor-linha input[type=color] { width: 52px; height: 38px; padding: 2px; border: 1px solid var(--borda); border-radius: var(--raio); background: #fff; cursor: pointer; }
   `],
 })
 export class PrioridadesPagina implements OnInit {
@@ -80,7 +96,7 @@ export class PrioridadesPagina implements OnInit {
   readonly prioridades = signal<NivelPrioridade[]>([]);
   readonly modal = signal(false);
   editando: NivelPrioridade | null = null;
-  form = { nome: '', nivel: 0, prefixo: '', ativo: true };
+  form = { nome: '', nivel: 0, cor: '#1d3451', prefixo: '', ativo: true };
 
   async ngOnInit() {
     await this.carregar();
@@ -92,13 +108,13 @@ export class PrioridadesPagina implements OnInit {
 
   abrirNovo() {
     this.editando = null;
-    this.form = { nome: '', nivel: 1, prefixo: '', ativo: true };
+    this.form = { nome: '', nivel: 1, cor: '#1d3451', prefixo: '', ativo: true };
     this.modal.set(true);
   }
 
   abrirEdicao(p: NivelPrioridade) {
     this.editando = p;
-    this.form = { nome: p.nome, nivel: p.nivel, prefixo: p.prefixo, ativo: p.ativo };
+    this.form = { nome: p.nome, nivel: p.nivel, cor: p.cor || '#1d3451', prefixo: p.prefixo, ativo: p.ativo };
     this.modal.set(true);
   }
 

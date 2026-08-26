@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import {
   Api,
+  API_URL,
   Realtime,
   SessaoDispositivo,
   ConfigDispositivo,
@@ -54,6 +55,13 @@ export class App implements OnInit, OnDestroy {
   protected readonly dataHoje = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long', day: '2-digit', month: 'long',
   });
+
+  private readonly apiUrl = inject(API_URL);
+  /** Uploads da Agenda Visual chegam como /uploads/... — resolve para o host da API. */
+  protected urlMidia(url: string | null): string {
+    if (!url) return '';
+    return url.startsWith('/') ? new URL(this.apiUrl).origin + url : url;
+  }
 
   private intervalos: ReturnType<typeof setInterval>[] = [];
   private timeoutDestaque: ReturnType<typeof setTimeout> | null = null;

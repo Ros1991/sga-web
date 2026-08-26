@@ -19,7 +19,7 @@
         <section class="chamada-atual" [class.vazia]="!ultimaChamada()">
           <span class="rotulo">Senha chamada</span>
           @if (ultimaChamada(); as s) {
-            <span class="codigo">{{ s.codigo }}</span>
+            <span class="codigo" [style.color]="s.prioridadeCor">{{ s.codigo }}</span>
             <span class="guiche">GUICHÊ <strong>{{ s.guiche ?? '—' }}</strong></span>
           } @else {
             <span class="aguarde">Aguardando a primeira chamada</span>
@@ -31,7 +31,7 @@
           <ul>
             @for (senha of anteriores(); track senha.id) {
               <li>
-                <span class="codigo">{{ senha.codigo }}</span>
+                <span class="codigo" [style.color]="senha.prioridadeCor">{{ senha.codigo }}</span>
                 <span class="guiche">Guichê {{ senha.guiche ?? '—' }}</span>
               </li>
             } @empty {
@@ -58,10 +58,10 @@
                 }
               }
               @case ('IMAGEM') {
-                <img class="midia__conteudo" [src]="m.url" [alt]="m.titulo" />
+                <img class="midia__conteudo" [src]="urlMidia(m.url)" [alt]="m.titulo" />
               }
               @case ('VIDEO') {
-                <video class="midia__conteudo" [src]="m.url" autoplay muted loop playsinline></video>
+                <video class="midia__conteudo" [src]="urlMidia(m.url)" autoplay muted loop playsinline></video>
               }
             }
           </div>
@@ -89,7 +89,7 @@
       <div class="destaque">
         <div class="destaque__caixa">
           <span class="destaque__rotulo">Senha chamada</span>
-          <span class="destaque__codigo">{{ senha.codigo }}</span>
+          <span class="destaque__codigo" [style.color]="senha.prioridadeCor">{{ senha.codigo }}</span>
           <span class="destaque__guiche">GUICHÊ {{ senha.guiche ?? '—' }}</span>
         </div>
       </div>

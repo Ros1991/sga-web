@@ -52,6 +52,8 @@ export interface NivelPrioridade {
   id: string;
   nome: string;
   nivel: number;
+  /** Cor da fonte no painel (hex). */
+  cor: string;
   prefixo: string;
   ativo: boolean;
 }
@@ -109,6 +111,7 @@ export interface SenhaResumo {
   subservico: string;
   prioridade: string;
   prioridadeNivel: number;
+  prioridadeCor: string;
   guiche: string | null;
   emitidaEm: string;
   chamadaEm: string | null;

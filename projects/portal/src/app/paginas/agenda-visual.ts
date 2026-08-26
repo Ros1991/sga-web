@@ -55,8 +55,8 @@ import { Api, Autenticacao, EventoMidia, Toasts, Unidade, mensagemDeErro } from 
           <div class="campo"><label>Tipo *</label>
             <select [(ngModel)]="form.tipo" name="tipo">
               <option value="YOUTUBE">Vídeo do YouTube</option>
-              <option value="IMAGEM">Imagem (URL)</option>
-              <option value="VIDEO">Vídeo MP4 (URL)</option>
+              <option value="IMAGEM">Imagem</option>
+              <option value="VIDEO">Vídeo (arquivo)</option>
             </select>
           </div>
           @if (form.tipo === 'YOUTUBE') {
@@ -66,7 +66,24 @@ import { Api, Autenticacao, EventoMidia, Toasts, Unidade, mensagemDeErro } from 
               <span class="dica-campo">Só o trecho depois de “v=” na URL do YouTube — não a URL inteira.</span>
             </div>
           } @else {
-            <div class="campo"><label>URL da mídia *</label><input [(ngModel)]="form.url" name="url" required /></div>
+            <div class="campo">
+              <label>Origem *</label>
+              <select [(ngModel)]="origem" name="origem">
+                <option value="arquivo">Enviar arquivo (do computador ou pendrive)</option>
+                <option value="url">Informar URL</option>
+              </select>
+            </div>
+            @if (origem === 'arquivo') {
+              <div class="campo">
+                <label>Arquivo * <small>(PNG, JPG, WEBP, GIF, MP4, WEBM — até 300 MB)</small></label>
+                <input type="file" #arq (change)="enviarArquivo(arq)"
+                  [accept]="form.tipo === 'IMAGEM' ? 'image/png,image/jpeg,image/webp,image/gif' : 'video/mp4,video/webm'" />
+                @if (enviando()) { <span class="dica-campo">Enviando… {{ '' }}</span> }
+                @if (form.url && !enviando()) { <span class="dica-campo ok">✔ Arquivo enviado — pronto para salvar</span> }
+              </div>
+            } @else {
+              <div class="campo"><label>URL da mídia *</label><input [(ngModel)]="form.url" name="url" required /></div>
+            }
           }
           <div class="linha">
             <div class="campo"><label>Início *</label><input type="datetime-local" [(ngModel)]="form.inicio" name="inicio" required /></div>
@@ -115,6 +132,28 @@ export class AgendaVisualPagina implements OnInit {
   readonly unidades = signal<Unidade[]>([]);
   readonly modal = signal(false);
   readonly salvando = signal(false);
+  readonly enviando = signal(false);
+  /** Origem da mídia para IMAGEM/VIDEO: arquivo enviado (pendrive) ou URL. */
+  origem: 'arquivo' | 'url' = 'arquivo';
+
+  async enviarArquivo(input: HTMLInputElement) {
+    const arquivo = input.files?.[0];
+    if (!arquivo) return;
+    this.enviando.set(true);
+    try {
+      const dados = new FormData();
+      dados.append('arquivo', arquivo);
+      const r = await this.api.post<{ url: string; tipo: string }>('/eventos-midia/upload', dados);
+      this.form.url = r.url;
+      this.form.tipo = r.tipo; // corrige se o usuário escolheu IMAGEM e enviou vídeo
+      this.toasts.sucesso('Arquivo enviado.');
+    } catch (e) {
+      input.value = '';
+      this.toasts.erro(mensagemDeErro(e));
+    } finally {
+      this.enviando.set(false);
+    }
+  }
   readonly ehAdmin = this.auth.usuario()?.perfil === 'ADMIN';
 
   unidadesSel = new Set<string>();
@@ -134,6 +173,7 @@ export class AgendaVisualPagina implements OnInit {
     const agora = new Date();
     const fim = new Date(agora.getTime() + 8 * 3600_000);
     const local = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    this.origem = 'arquivo';
     this.form = { titulo: '', tipo: 'YOUTUBE', videoId: '', url: '', inicio: local(agora), fim: local(fim) };
     this.unidadesSel = new Set(this.ehAdmin ? [] : this.unidades().map((u) => u.id));
     this.modal.set(true);
