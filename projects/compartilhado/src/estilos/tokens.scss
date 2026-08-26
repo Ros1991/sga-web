@@ -107,6 +107,9 @@ select {
   display: grid;
   gap: 6px;
   margin-bottom: 14px;
+  // Em linhas com colunas de alturas diferentes (ex.: campo com texto de
+  // ajuda ao lado de campo sem), os controles não devem esticar.
+  align-content: start;
 
   label {
     font-size: 13px;

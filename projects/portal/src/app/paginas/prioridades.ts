@@ -46,7 +46,7 @@ import { Api, NivelPrioridade, Toasts, mensagemDeErro } from 'compartilhado';
           <div class="campo"><label>Nome *</label><input [(ngModel)]="form.nome" name="nome" required /></div>
           <div class="linha">
             <div class="campo">
-              <label>Nível (0–99) *</label>
+              <label>Nível *</label>
               <input type="number" [(ngModel)]="form.nivel" name="nivel" min="-9" max="99" required />
               <small class="ajuda">Menor n&iacute;vel = chamado antes (ex.: Idoso 80+ = -1, P&uacute;blico em geral = 6)</small>
             </div>
