@@ -46,11 +46,10 @@ export class App implements OnInit, OnDestroy {
     return null;
   });
 
-  protected readonly ultimas = computed<SenhaResumo[]>(() => this.fila()?.ultimasChamadas ?? []);
-  /** Senha em evidência no cartão fixo (a mais recente chamada). */
-  protected readonly ultimaChamada = computed<SenhaResumo | null>(() => this.ultimas()[0] ?? null);
-  /** Histórico abaixo do cartão (sem repetir a atual). */
-  protected readonly anteriores = computed<SenhaResumo[]>(() => this.ultimas().slice(1, 6));
+  /** Faixa de recentes: a mais nova primeiro (destacada), até 5 na tela. */
+  protected readonly ultimas = computed<SenhaResumo[]>(
+    () => (this.fila()?.ultimasChamadas ?? []).slice(0, 5),
+  );
 
   protected readonly dataHoje = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long', day: '2-digit', month: 'long',
