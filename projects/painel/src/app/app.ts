@@ -129,7 +129,14 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  /** Última chamada anunciada (id + nº de chamadas), para não repetir o eco do socket. */
+  private ultimoAnuncio = '';
+
   private aoChamar(senha: SenhaResumo): void {
+    const marca = `${senha.id}#${senha.chamadas}`;
+    if (marca === this.ultimoAnuncio) return; // evento repetido: já foi anunciado
+    this.ultimoAnuncio = marca;
+
     this.destaque.set(senha);
     if (this.timeoutDestaque) clearTimeout(this.timeoutDestaque);
     this.timeoutDestaque = setTimeout(() => this.destaque.set(null), 10_000);
@@ -210,18 +217,18 @@ export class App implements OnInit, OnDestroy {
   private anunciar(senha: SenhaResumo): void {
     try {
       if (!('speechSynthesis' in window)) return;
-      const texto = `Senha ${this.soletrar(senha.codigo)}, guichê ${senha.guiche ?? ''}`;
-      speechSynthesis.cancel();
-      // Anuncia duas vezes, como nos guichês de atendimento
-      for (let i = 0; i < 2; i++) {
-        const fala = new SpeechSynthesisUtterance(texto);
-        fala.lang = 'pt-BR';
-        fala.rate = 0.9;
-        const voz = speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith('pt'));
-        if (voz) fala.voice = voz;
-        if (i === 0) fala.onerror = () => this.somBloqueado.set(true);
-        speechSynthesis.speak(fala);
-      }
+      const fala = new SpeechSynthesisUtterance(
+        `Senha ${this.soletrar(senha.codigo)}, guichê ${senha.guiche ?? ''}`,
+      );
+      fala.lang = 'pt-BR';
+      fala.rate = 0.9;
+      const voz = speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith('pt'));
+      if (voz) fala.voice = voz;
+      fala.onerror = (e) => {
+        if (e.error !== 'interrupted' && e.error !== 'canceled') this.somBloqueado.set(true);
+      };
+      speechSynthesis.cancel(); // descarta anúncio anterior ainda em curso
+      speechSynthesis.speak(fala);
     } catch {
       // sem síntese de voz — segue sem anúncio
     }

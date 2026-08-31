@@ -23,7 +23,14 @@ export class Realtime implements OnDestroy {
     return this.socket;
   }
 
+  /**
+   * Registra o tratador do evento, substituindo qualquer anterior.
+   * Sem o `off`, uma nova instância do componente (hot-reload em
+   * desenvolvimento, ou remontagem de rota) acumularia tratadores no mesmo
+   * socket e a mesma chamada seria anunciada várias vezes.
+   */
   em<T>(evento: string, callback: (payload: T) => void): void {
+    this.socket?.off(evento);
     this.socket?.on(evento, callback as (p: unknown) => void);
   }
 
