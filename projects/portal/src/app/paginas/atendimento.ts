@@ -51,6 +51,16 @@ const CHAVE_GUICHE = 'sga.atendimento.guiche';
                     [class.etiqueta--verde]="s.status === 'EM_ATENDIMENTO'">
                 {{ s.status === 'CHAMADA' ? 'Chamada — aguardando o cidadão' : 'Em atendimento' }}
               </span>
+              <div class="cronometros">
+                <span class="crono">
+                  <small>{{ s.status === 'CHAMADA' ? 'Chamada há' : 'Em atendimento há' }}</small>
+                  <strong>{{ tempoNoGuiche(s) }}</strong>
+                </span>
+                <span class="crono">
+                  <small>Esperou na fila</small>
+                  <strong>{{ esperaAteChamada(s) }}</strong>
+                </span>
+              </div>
             </div>
             <div class="botoes">
               @if (s.status === 'CHAMADA') {
@@ -85,7 +95,7 @@ const CHAVE_GUICHE = 'sga.atendimento.guiche';
                   <td>
                     <span class="etiqueta" [class.etiqueta--ambar]="s.prioridadeNivel > 0">{{ s.prioridade }}</span>
                   </td>
-                  <td>{{ espera(s) }}</td>
+                  <td><span class="tempo" [class]="'tempo--' + faixaEspera(s)">{{ espera(s) }}</span></td>
                 </tr>
               } @empty {
                 <tr><td colspan="4" class="vazio">Ninguém aguardando. 🎉</td></tr>
@@ -115,6 +125,20 @@ const CHAVE_GUICHE = 'sga.atendimento.guiche';
         .transferir { padding: 9px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font: 13.5px var(--fonte); } } }
     .fila h3 { font-size: 15px; margin-bottom: 12px; small { color: var(--texto-3); font-weight: 400; } }
     .vazio { color: var(--texto-3); text-align: center; padding: 22px !important; }
+
+    /* Cronômetros do guichê */
+    .cronometros { display: flex; gap: 10px; margin-top: 10px; }
+    .crono { display: grid; gap: 2px; padding: 8px 16px; border: 1px solid var(--borda-2);
+      border-radius: 8px; background: var(--fundo); min-width: 108px;
+      small { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--texto-3); }
+      strong { font-size: 22px; font-variant-numeric: tabular-nums; color: var(--azul-escuro); } }
+
+    /* Espera na fila, por faixa de urgência */
+    .tempo { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14.5px;
+      padding: 3px 10px; border-radius: 99px; display: inline-block; }
+    .tempo--ok { color: var(--verde); background: var(--verde-suave); }
+    .tempo--atencao { color: var(--ambar); background: var(--ambar-suave); }
+    .tempo--critico { color: var(--vermelho); background: var(--vermelho-suave); }
   `],
 })
 export class AtendimentoPagina implements OnInit, OnDestroy {
@@ -123,6 +147,10 @@ export class AtendimentoPagina implements OnInit, OnDestroy {
   private readonly toasts = inject(Toasts);
   private readonly realtime = inject(Realtime);
   private timer: ReturnType<typeof setInterval> | null = null;
+  private relogio: ReturnType<typeof setInterval> | null = null;
+
+  /** Avança de segundo em segundo para os cronômetros correrem na tela. */
+  private readonly agora = signal(Date.now());
 
   readonly unidades = signal<Unidade[]>([]);
   readonly guiches = signal<Guiche[]>([]);
@@ -158,10 +186,12 @@ export class AtendimentoPagina implements OnInit, OnDestroy {
       this.guicheId = '';
     }
     this.timer = setInterval(() => this.atualizar(), 30_000);
+    this.relogio = setInterval(() => this.agora.set(Date.now()), 1_000);
   }
 
   ngOnDestroy() {
     if (this.timer) clearInterval(this.timer);
+    if (this.relogio) clearInterval(this.relogio);
     this.realtime.desconectar();
   }
 
@@ -265,9 +295,46 @@ export class AtendimentoPagina implements OnInit, OnDestroy {
     }
   }
 
+  /** Segundos decorridos desde uma data — reage ao relógio (atualiza a cada 1s). */
+  private decorridos(desde: string | null | undefined): number {
+    if (!desde) return 0;
+    return Math.max(0, Math.floor((this.agora() - new Date(desde).getTime()) / 1000));
+  }
+
+  private formatar(seg: number): string {
+    const h = Math.floor(seg / 3600);
+    const m = Math.floor((seg % 3600) / 60);
+    const s = seg % 60;
+    const mm = String(m).padStart(2, '0');
+    const ss = String(s).padStart(2, '0');
+    return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  }
+
+  /** Tempo que o cidadão está aguardando na fila (desde a emissão). */
   espera(s: SenhaResumo): string {
-    const seg = Math.floor((Date.now() - new Date(s.emitidaEm).getTime()) / 1000);
-    const m = Math.floor(seg / 60);
-    return m ? `${m} min` : `${seg}s`;
+    return this.formatar(this.decorridos(s.emitidaEm));
+  }
+
+  /**
+   * Faixa de urgência da espera, para colorir o cronômetro:
+   * até 10 min normal, 10–20 atenção, acima de 20 crítico.
+   */
+  faixaEspera(s: SenhaResumo): 'ok' | 'atencao' | 'critico' {
+    const min = this.decorridos(s.emitidaEm) / 60;
+    if (min >= 20) return 'critico';
+    if (min >= 10) return 'atencao';
+    return 'ok';
+  }
+
+  /** Cronômetro da senha no guichê: desde a chamada ou desde o início do atendimento. */
+  tempoNoGuiche(s: SenhaResumo): string {
+    return this.formatar(this.decorridos(s.status === 'CHAMADA' ? s.chamadaEm : s.iniciadaEm ?? s.chamadaEm));
+  }
+
+  /** Quanto o cidadão esperou da emissão até ser chamado (não corre mais). */
+  esperaAteChamada(s: SenhaResumo): string {
+    if (!s.chamadaEm) return this.espera(s);
+    const seg = Math.max(0, Math.floor((new Date(s.chamadaEm).getTime() - new Date(s.emitidaEm).getTime()) / 1000));
+    return this.formatar(seg);
   }
 }

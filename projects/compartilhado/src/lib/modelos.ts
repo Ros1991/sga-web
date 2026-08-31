@@ -115,6 +115,7 @@ export interface SenhaResumo {
   guiche: string | null;
   emitidaEm: string;
   chamadaEm: string | null;
+  iniciadaEm: string | null;
   chamadas: number;
 }
 
