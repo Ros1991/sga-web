@@ -8,6 +8,7 @@
   background: var(--fundo);
   user-select: none;
   cursor: none; // TV: sem ponteiro
+  &:has(.ativar-som) { cursor: default; }
 }
 
 .painel {
@@ -284,3 +285,21 @@
   }
 }
 .tela-erro__logo { font-family: var(--fonte-marca); font-size: 34px; color: var(--azul); strong { font-weight: 700; } }
+
+// Aviso de som bloqueado (política de autoplay): some ao primeiro toque
+.ativar-som {
+  position: fixed;
+  left: 50%;
+  top: 96px;
+  transform: translateX(-50%);
+  z-index: 60;
+  border: 0;
+  border-radius: 99px;
+  padding: 14px 30px;
+  background: var(--ambar);
+  color: #fff;
+  font: 600 19px var(--fonte);
+  box-shadow: 0 10px 30px rgba(185, 80, 0, .4);
+  cursor: pointer;
+  animation: pulsar 1.6s ease-in-out infinite;
+}

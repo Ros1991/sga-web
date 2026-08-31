@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import {
   Api,
@@ -34,6 +34,8 @@ export class App implements OnInit, OnDestroy {
   protected readonly midia = signal<EventoMidia | null>(null);
   protected readonly destaque = signal<SenhaResumo | null>(null);
   protected readonly hora = signal(this.horaAgora());
+  /** Navegador ainda não liberou o áudio (falta interação na página). */
+  protected readonly somBloqueado = signal(false);
 
   protected readonly midiaUrl = computed<SafeResourceUrl | null>(() => {
     const m = this.midia();
@@ -84,11 +86,19 @@ export class App implements OnInit, OnDestroy {
     this.realtime.em<SenhaResumo>('chamada', (senha) => this.aoChamar(senha));
     this.realtime.em<unknown>('midia', () => void this.carregarMidia());
 
+    this.verificarAudio();
+
     this.intervalos.push(
       setInterval(() => this.hora.set(this.horaAgora()), 1000),
       setInterval(() => void this.carregarFila(), 60_000),
       setInterval(() => void this.carregarMidia(), 300_000),
     );
+  }
+
+  @HostListener('document:pointerdown')
+  @HostListener('document:keydown')
+  aoInteragir(): void {
+    if (this.somBloqueado()) this.liberarSom();
   }
 
   ngOnDestroy(): void {
@@ -127,9 +137,48 @@ export class App implements OnInit, OnDestroy {
     this.anunciar(senha);
   }
 
-  private tocarBeep(): void {
+  // ---------------- Áudio ----------------
+  // Navegadores só liberam som depois de uma interação com a página (política
+  // de autoplay). Um painel de TV nunca recebe clique, então mostramos um
+  // aviso; qualquer toque/tecla libera o áudio e o aviso some.
+
+  private audio: AudioContext | null = null;
+
+  private contexto(): AudioContext | null {
     try {
-      const ctx = new AudioContext();
+      this.audio ??= new AudioContext();
+      if (this.audio.state === 'suspended') void this.audio.resume();
+      return this.audio;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Libera o som no primeiro toque/tecla e some com o aviso. */
+  protected liberarSom = (): void => {
+    const ctx = this.contexto();
+    void ctx?.resume();
+    try {
+      // "aquece" a síntese: uma fala vazia dentro do gesto do usuário
+      const vazio = new SpeechSynthesisUtterance(' ');
+      vazio.volume = 0;
+      speechSynthesis.speak(vazio);
+    } catch {
+      // sem síntese: o beep ainda funciona
+    }
+    this.somBloqueado.set(false);
+  };
+
+  private verificarAudio(): void {
+    const ctx = this.contexto();
+    const ativo = ctx?.state === 'running' && (navigator.userActivation?.hasBeenActive ?? true);
+    this.somBloqueado.set(!ativo);
+  }
+
+  private tocarBeep(): void {
+    const ctx = this.contexto();
+    if (!ctx) return;
+    try {
       const tocar = (freq: number, inicio: number, duracao: number) => {
         const osc = ctx.createOscillator();
         const ganho = ctx.createGain();
@@ -144,27 +193,35 @@ export class App implements OnInit, OnDestroy {
       };
       tocar(880, 0, 0.25);
       tocar(1320, 0.3, 0.35);
-      setTimeout(() => void ctx.close(), 1500);
     } catch {
       // sem áudio disponível — segue sem beep
     }
   }
 
+  /** Soletra o código: "RC-009AG" → "R C, 0 0 9, A G". */
+  private soletrar(codigo: string): string {
+    return codigo
+      .split('-')
+      .map((parte) => parte.replace(/([A-Za-z]+)|(\d+)/g, (t) => t.split('').join(' ') + ', '))
+      .join(' ')
+      .replace(/,\s*$/, '');
+  }
+
   private anunciar(senha: SenhaResumo): void {
     try {
       if (!('speechSynthesis' in window)) return;
-      const soletrado = senha.codigo
-        .replace(/-/g, ' ')
-        .split('')
-        .join(' ')
-        .replace(/\s{2,}/g, ', ');
-      const fala = new SpeechSynthesisUtterance(
-        `Senha ${soletrado}, guichê ${senha.guiche ?? ''}`,
-      );
-      fala.lang = 'pt-BR';
-      fala.rate = 0.9;
+      const texto = `Senha ${this.soletrar(senha.codigo)}, guichê ${senha.guiche ?? ''}`;
       speechSynthesis.cancel();
-      speechSynthesis.speak(fala);
+      // Anuncia duas vezes, como nos guichês de atendimento
+      for (let i = 0; i < 2; i++) {
+        const fala = new SpeechSynthesisUtterance(texto);
+        fala.lang = 'pt-BR';
+        fala.rate = 0.9;
+        const voz = speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith('pt'));
+        if (voz) fala.voice = voz;
+        if (i === 0) fala.onerror = () => this.somBloqueado.set(true);
+        speechSynthesis.speak(fala);
+      }
     } catch {
       // sem síntese de voz — segue sem anúncio
     }

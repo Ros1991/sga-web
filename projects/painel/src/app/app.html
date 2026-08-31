@@ -8,6 +8,12 @@
   </div>
 } @else if (config(); as cfg) {
   <div class="painel">
+    @if (somBloqueado()) {
+      <button type="button" class="ativar-som" (click)="liberarSom()">
+        🔇 Toque para ativar o som das chamadas
+      </button>
+    }
+
     <header class="topo">
       <div class="topo__marca"><strong>DETRAN</strong>&nbsp;- DF</div>
       <div class="topo__unidade">{{ cfg.unidadeNome }}</div>
