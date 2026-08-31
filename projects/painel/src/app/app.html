@@ -57,6 +57,23 @@
           <p class="dica">Acompanhe sua senha por este painel</p>
         </div>
       }
+
+      <!-- Chamada: cobre exatamente a área da mídia, por 10s -->
+      @if (destaque(); as senha) {
+        <div class="destaque">
+          <div class="destaque__caixa">
+            <span class="destaque__rotulo">Senha chamada</span>
+            <span class="destaque__codigo" [style.color]="senha.prioridadeCor">{{ senha.codigo }}</span>
+            <span class="destaque__tipo" [style.color]="senha.prioridadeCor" [style.border-color]="senha.prioridadeCor">
+              {{ senha.prioridade }}
+            </span>
+            @if (senha.subservico) {
+              <span class="destaque__servico">{{ senha.subservico }}</span>
+            }
+            <span class="destaque__guiche">GUICHÊ {{ senha.guiche ?? '—' }}</span>
+          </div>
+        </div>
+      }
     </main>
 
     <section class="recentes">
@@ -73,20 +90,5 @@
       </ul>
     </section>
 
-    @if (destaque(); as senha) {
-      <div class="destaque">
-        <div class="destaque__caixa">
-          <span class="destaque__rotulo">Senha chamada</span>
-          <span class="destaque__codigo" [style.color]="senha.prioridadeCor">{{ senha.codigo }}</span>
-          <span class="destaque__tipo" [style.color]="senha.prioridadeCor" [style.border-color]="senha.prioridadeCor">
-            {{ senha.prioridade }}
-          </span>
-          @if (senha.subservico) {
-            <span class="destaque__servico">{{ senha.subservico }}</span>
-          }
-          <span class="destaque__guiche">GUICHÊ {{ senha.guiche ?? '—' }}</span>
-        </div>
-      </div>
-    }
   </div>
 }
