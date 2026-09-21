@@ -12,8 +12,17 @@ import {
 } from 'compartilhado';
 
 interface RespostaMidia {
+  /** Conteúdos no ar agora (até 2; com 2 a área de mídia divide ao meio). */
+  atuais?: EventoMidia[];
+  /** API antiga: um conteúdo só. */
   atual: EventoMidia | null;
   proximos: EventoMidia[];
+}
+
+/** Conteúdo pronto para exibir: URL do YouTube já sanitizada. */
+interface MidiaExibida {
+  evento: EventoMidia;
+  youtube: SafeResourceUrl | null;
 }
 
 @Component({
@@ -31,22 +40,28 @@ export class App implements OnInit, OnDestroy {
   protected readonly config = signal<ConfigDispositivo | null>(null);
   protected readonly erro = signal<string | null>(null);
   protected readonly fila = signal<FilaSnapshot | null>(null);
-  protected readonly midia = signal<EventoMidia | null>(null);
+  /** Conteúdos no ar (0, 1 ou 2). */
+  protected readonly midias = signal<EventoMidia[]>([]);
   protected readonly destaque = signal<SenhaResumo | null>(null);
   protected readonly hora = signal(this.horaAgora());
   /** Navegador ainda não liberou o áudio (falta interação na página). */
   protected readonly somBloqueado = signal(false);
 
-  protected readonly midiaUrl = computed<SafeResourceUrl | null>(() => {
-    const m = this.midia();
-    if (!m) return null;
-    if (m.tipo === 'YOUTUBE' && m.videoId) {
-      return this.sanitizer.bypassSecurityTrustResourceUrl(
-        `https://www.youtube.com/embed/${m.videoId}?autoplay=1&mute=1&loop=1&playlist=${m.videoId}&rel=0`,
-      );
-    }
-    return null;
-  });
+  /**
+   * Cada conteúdo com sua URL de YouTube já sanitizada. Computado só quando a
+   * lista muda — recriar a SafeResourceUrl a cada detecção recarregaria o iframe.
+   */
+  protected readonly midiasExibidas = computed<MidiaExibida[]>(() =>
+    this.midias().map((evento) => ({
+      evento,
+      youtube:
+        evento.tipo === 'YOUTUBE' && evento.videoId
+          ? this.sanitizer.bypassSecurityTrustResourceUrl(
+              `https://www.youtube.com/embed/${evento.videoId}?autoplay=1&mute=1&loop=1&playlist=${evento.videoId}&rel=0`,
+            )
+          : null,
+    })),
+  );
 
   /** Faixa de recentes: a mais nova primeiro (destacada), até 5 na tela. */
   protected readonly ultimas = computed<SenhaResumo[]>(
@@ -104,6 +119,7 @@ export class App implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.intervalos.forEach((i) => clearInterval(i));
     if (this.timeoutDestaque) clearTimeout(this.timeoutDestaque);
+    if (this.timeoutMidia) clearTimeout(this.timeoutMidia);
     this.realtime.desconectar();
   }
 
@@ -120,13 +136,40 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  private timeoutMidia: ReturnType<typeof setTimeout> | null = null;
+
   private async carregarMidia(): Promise<void> {
     try {
       const resposta = await this.api.get<RespostaMidia>('/dispositivo/midia', this.sessao.headers());
-      this.midia.set(resposta.atual);
+      const novas = resposta.atuais ?? (resposta.atual ? [resposta.atual] : []);
+
+      // Só troca se mudou: uma lista nova com os mesmos conteúdos recriaria
+      // os iframes e o vídeo voltaria ao começo a cada consulta.
+      const chave = (l: EventoMidia[]) =>
+        l.map((e) => `${e.id}|${e.posicao}|${e.tipo}|${e.videoId ?? ''}|${e.url ?? ''}`).join(';');
+      if (chave(novas) !== chave(this.midias())) this.midias.set(novas);
+
+      this.agendarProximaTroca(novas, resposta.proximos ?? []);
     } catch {
       // mantém a mídia atual; o fallback tenta de novo
     }
+  }
+
+  /**
+   * Recarrega no instante em que um conteúdo termina ou o próximo começa —
+   * assim a tela divide/junta na hora, sem esperar a consulta periódica.
+   */
+  private agendarProximaTroca(atuais: EventoMidia[], proximos: EventoMidia[]): void {
+    if (this.timeoutMidia) clearTimeout(this.timeoutMidia);
+    const agora = Date.now();
+    const marcos = [
+      ...atuais.map((e) => new Date(e.fim).getTime() + 1000),
+      ...proximos.map((e) => new Date(e.inicio).getTime() + 500),
+    ].filter((t) => t > agora);
+    if (!marcos.length) return;
+    // setTimeout estoura acima de ~24,8 dias; a consulta periódica cobre o resto
+    const espera = Math.min(Math.min(...marcos) - agora, 6 * 60 * 60 * 1000);
+    this.timeoutMidia = setTimeout(() => void this.carregarMidia(), espera);
   }
 
   /** Última chamada anunciada (id + nº de chamadas), para não repetir o eco do socket. */

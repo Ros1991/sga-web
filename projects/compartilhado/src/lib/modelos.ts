@@ -162,6 +162,8 @@ export interface EventoMidia {
   videoId: string | null;
   /** Unidades onde é exibido. Vazio = todas. */
   unidades: Unidade[];
+  /** Lado na tela dividida (2 conteúdos no mesmo horário): 1 = esquerda, 2 = direita. */
+  posicao: number;
   inicio: string;
   fim: string;
   ativo: boolean;

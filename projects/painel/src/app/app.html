@@ -24,27 +24,35 @@
     </header>
 
     <main class="midia">
-      @if (midia(); as m) {
-        <div class="midia__moldura">
-          @switch (m.tipo) {
-            @case ('YOUTUBE') {
-              @if (midiaUrl(); as url) {
-                <iframe
-                  class="midia__conteudo"
-                  [src]="url"
-                  title="{{ m.titulo }}"
-                  frameborder="0"
-                  allow="autoplay; encrypted-media"
-                  allowfullscreen
-                ></iframe>
+      @if (midiasExibidas().length) {
+        <!-- 1 conteúdo: ocupa a área toda · 2 conteúdos: divide ao meio -->
+        <div class="midia__grade" [class.midia__grade--dividida]="midiasExibidas().length > 1">
+          @for (item of midiasExibidas(); track item.evento.id) {
+            <div class="midia__moldura">
+              @switch (item.evento.tipo) {
+                @case ('YOUTUBE') {
+                  @if (item.youtube; as url) {
+                    <iframe
+                      class="midia__conteudo"
+                      [src]="url"
+                      title="{{ item.evento.titulo }}"
+                      frameborder="0"
+                      allow="autoplay; encrypted-media"
+                      allowfullscreen
+                    ></iframe>
+                  }
+                }
+                @case ('IMAGEM') {
+                  <!-- fundo desfocado da própria imagem preenche as sobras; a imagem aparece inteira -->
+                  <img class="midia__fundo" [src]="urlMidia(item.evento.url)" alt="" aria-hidden="true" />
+                  <img class="midia__conteudo midia__conteudo--inteira" [src]="urlMidia(item.evento.url)" [alt]="item.evento.titulo" />
+                }
+                @case ('VIDEO') {
+                  <video class="midia__conteudo midia__conteudo--inteira" [src]="urlMidia(item.evento.url)"
+                    autoplay muted loop playsinline></video>
+                }
               }
-            }
-            @case ('IMAGEM') {
-              <img class="midia__conteudo" [src]="urlMidia(m.url)" [alt]="m.titulo" />
-            }
-            @case ('VIDEO') {
-              <video class="midia__conteudo" [src]="urlMidia(m.url)" autoplay muted loop playsinline></video>
-            }
+            </div>
           }
         </div>
       } @else {
