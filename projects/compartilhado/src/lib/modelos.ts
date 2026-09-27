@@ -209,3 +209,47 @@ export interface DashboardResumo {
   porSubservico: { nome: string; emitidas: number; finalizadas: number }[];
   porAtendente: { nome: string; finalizadas: number }[];
 }
+
+/** Filtros que um relatório pode liberar (espelha `freeFieldsPerReport` do SGA antigo). */
+export type ChaveFiltroRelatorio =
+  | 'de'
+  | 'ate'
+  | 'horaDe'
+  | 'horaAte'
+  | 'unidadeIds'
+  | 'subservicoIds'
+  | 'status';
+
+export interface ColunaRelatorio {
+  chave: string;
+  rotulo: string;
+  numerica?: boolean;
+}
+
+export interface DefinicaoRelatorio {
+  chave: string;
+  nome: string;
+  descricao: string;
+  filtros: ChaveFiltroRelatorio[];
+  colunas: ColunaRelatorio[];
+  disponivel: boolean;
+  indisponivelPorque?: string;
+}
+
+export interface CatalogoRelatorios {
+  relatorios: DefinicaoRelatorio[];
+  opcoesStatus: { chave: string; rotulo: string }[];
+}
+
+export interface ResultadoRelatorio {
+  chave: string;
+  nome: string;
+  periodo: { de: string; ate: string } | null;
+  colunas: ColunaRelatorio[];
+  linhas: Record<string, string | number>[];
+  resumo: { rotulo: string; valor: string }[];
+  pagina: number;
+  porPagina: number;
+  total: number;
+  paginas: number;
+}

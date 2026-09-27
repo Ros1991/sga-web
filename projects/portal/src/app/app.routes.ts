@@ -46,6 +46,12 @@ export const routes: Routes = [
         loadComponent: () => import('./paginas/usuarios').then((m) => m.UsuariosPagina),
       },
       {
+        path: 'relatorios',
+        canActivate: [perfilGuard],
+        data: { perfis: ['ADMIN', 'GERENTE'] },
+        loadComponent: () => import('./paginas/relatorios').then((m) => m.RelatoriosPagina),
+      },
+      {
         path: 'agenda-visual',
         canActivate: [perfilGuard],
         data: { perfis: ['ADMIN', 'GERENTE'] },
