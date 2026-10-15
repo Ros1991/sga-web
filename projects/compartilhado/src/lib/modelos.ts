@@ -127,6 +127,8 @@ export interface Senha {
   prioridade?: NivelPrioridade;
   guiche?: Guiche | null;
   emitidaEm: string;
+  /** Conteúdo do QR impresso no cupom — nulo se a unidade não tem pesquisa ativa. */
+  avaliacaoUrl?: string | null;
 }
 
 export interface FilaSnapshot {
@@ -192,6 +194,25 @@ export interface PesquisaPublica {
   nome: string;
   unidade: string;
   perguntas: PesquisaPergunta[];
+}
+
+/** Situação da senha vista pelo link do QR (/a/:token). */
+export type SituacaoAvaliacao =
+  | 'AGUARDANDO'
+  | 'CHAMADA'
+  | 'EM_ATENDIMENTO'
+  | 'LIBERADA'
+  | 'RESPONDIDA'
+  | 'EXPIRADA'
+  | 'INDISPONIVEL';
+
+export interface AvaliacaoSenha {
+  situacao: SituacaoAvaliacao;
+  senha: { codigo: string; subservico: string; unidade: string; guiche: string | null };
+  /** Só quando LIBERADA. */
+  pesquisa?: PesquisaPublica;
+  /** Explicação para RESPONDIDA, EXPIRADA e INDISPONIVEL. */
+  motivo?: string;
 }
 
 export interface DashboardResumo {

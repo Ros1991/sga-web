@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import * as QRCode from 'qrcode';
 import {
   Api,
   SessaoDispositivo,
@@ -33,9 +34,32 @@ export class App implements OnInit, OnDestroy {
   protected readonly senha = signal<Senha | null>(null);
   protected readonly prioridadeEscolhida = signal<NivelPrioridade | null>(null);
   protected readonly impressaoAtiva = signal(false);
+  /** QR da avaliação desta senha (SVG em data URL) — sai no cupom e na tela. */
+  protected readonly qrAvaliacao = signal<string | null>(null);
+  private readonly qrCupom = viewChild<ElementRef<HTMLImageElement>>('qrCupom');
 
   protected imprimir(): void {
     window.print();
+  }
+
+  /**
+   * Espera o cupom renderizar e o QR decodificar antes do print — sem isso
+   * a impressora pode cortar o cupom sem o código.
+   */
+  private async imprimirQuandoPronto(): Promise<void> {
+    await new Promise((pronto) => setTimeout(pronto, 150));
+    await this.qrCupom()?.nativeElement.decode().catch(() => undefined);
+    this.imprimir();
+  }
+
+  /** SVG imprime nítido em qualquer resolução de impressora térmica. */
+  private async gerarQr(url: string): Promise<string | null> {
+    try {
+      const svg = await QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    } catch {
+      return null; // sem QR, a senha sai do mesmo jeito
+    }
   }
 
   protected formatarEmissao(iso?: string): string {
@@ -118,13 +142,13 @@ export class App implements OnInit, OnDestroy {
         { subservicoId: subservico.id, prioridadeId: prioridade.id },
         this.sessao.headers(),
       );
+      this.qrAvaliacao.set(senha.avaliacaoUrl ? await this.gerarQr(senha.avaliacaoUrl) : null);
       this.prioridadeEscolhida.set(prioridade);
       this.senha.set(senha);
       this.tela.set('senha');
       this.iniciarContagem();
       if (this.impressaoAtiva()) {
-        // pequeno atraso para o cupom renderizar antes do print
-        setTimeout(() => this.imprimir(), 350);
+        void this.imprimirQuandoPronto();
       }
     } catch (erro) {
       this.toasts.erro(mensagemDeErro(erro));
@@ -137,6 +161,7 @@ export class App implements OnInit, OnDestroy {
   protected recomecar(): void {
     this.pararContagem();
     this.senha.set(null);
+    this.qrAvaliacao.set(null);
     this.servicoEscolhido.set(null);
     this.subservicoEscolhido.set(null);
     this.tela.set('servico');

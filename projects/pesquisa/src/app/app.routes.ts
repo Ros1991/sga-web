@@ -9,5 +9,10 @@ export const routes: Routes = [
     path: 'p/:codigo',
     loadComponent: () => import('./pesquisa/pesquisa').then((m) => m.PesquisaComponent),
   },
+  {
+    // QR impresso na senha: avaliação daquele atendimento
+    path: 'a/:token',
+    loadComponent: () => import('./pesquisa/pesquisa').then((m) => m.PesquisaComponent),
+  },
   { path: '**', redirectTo: '' },
 ];

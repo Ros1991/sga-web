@@ -96,6 +96,15 @@
       <div class="senha__codigo">{{ senha()?.codigo }}</div>
       <p class="senha__servico">{{ subservicoEscolhido()?.nome }}</p>
       <p class="senha__instrucao">Guarde sua senha e acompanhe o painel</p>
+      @if (qrAvaliacao(); as qr) {
+        <div class="avaliacao">
+          <img class="avaliacao__qr" [src]="qr" alt="QR code para avaliar o atendimento" />
+          <div class="avaliacao__texto">
+            <strong>Avalie seu atendimento</strong>
+            <span>O QR code est&aacute; impresso na sua senha. Depois de atendido, aponte a c&acirc;mera do celular para ele.</span>
+          </div>
+        </div>
+      }
       <p class="senha__contagem">Voltando ao in&iacute;cio em {{ contagem() }}s</p>
       <button type="button" class="botao botao-outra" (click)="recomecar()">
         Emitir outra senha
@@ -120,5 +129,11 @@
     <hr class="cupom__linha" />
     <div class="cupom__data">{{ formatarEmissao(s.emitidaEm) }}</div>
     <div class="cupom__aviso">Acompanhe o painel de chamadas</div>
+    @if (qrAvaliacao(); as qr) {
+      <hr class="cupom__linha" />
+      <div class="cupom__avalie">AVALIE SEU ATENDIMENTO</div>
+      <img #qrCupom class="cupom__qr" [src]="qr" alt="" />
+      <div class="cupom__qr-texto">Depois de atendido, aponte a c&acirc;mera do celular para este c&oacute;digo. Leva menos de 1 minuto.</div>
+    }
   </section>
 }

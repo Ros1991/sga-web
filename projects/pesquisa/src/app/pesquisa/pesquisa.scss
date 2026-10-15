@@ -41,6 +41,99 @@
   }
 }
 
+.cabecalho__senha {
+  display: inline-block;
+  margin-top: 10px !important;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  font-size: 13.5px !important;
+
+  strong { color: var(--marinho); }
+}
+
+// ---------- Acompanhando a senha (QR lido antes do atendimento) ----------
+.acompanhando {
+  padding: 32px 22px;
+  gap: 4px;
+
+  &__rotulo {
+    margin: 14px 0 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--texto-3);
+  }
+
+  &__codigo {
+    font-family: var(--fonte-marca);
+    font-size: 76px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--azul);
+  }
+
+  &__servico {
+    margin: 6px 0 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--marinho);
+  }
+
+  &__unidade {
+    margin: 0;
+    font-size: 14px;
+    color: var(--texto-2);
+  }
+
+  &__dica {
+    margin: 18px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--texto-2);
+  }
+}
+
+.situacao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 20px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--azul-escuro);
+  background: var(--azul-suave);
+
+  &__pulso {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulsar 1.4s ease-in-out infinite;
+  }
+
+  &--chamada {
+    color: var(--vermelho);
+    background: var(--vermelho-suave);
+  }
+
+  &--atendimento {
+    color: var(--verde);
+    background: var(--verde-suave);
+  }
+}
+
+@keyframes pulsar {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.6); opacity: 0.45; }
+}
+
 // ---------- Progresso ----------
 .progresso {
   &__rotulo {

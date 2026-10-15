@@ -1,20 +1,32 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { Api, mensagemDeErro } from 'compartilhado';
-import type { PesquisaPergunta, PesquisaPublica } from 'compartilhado';
+import type { AvaliacaoSenha, PesquisaPergunta, PesquisaPublica } from 'compartilhado';
 
 type Estado =
   | 'carregando'
   | 'nao-encontrada'
+  | 'acompanhando'
   | 'formulario'
   | 'enviando'
   | 'sucesso'
   | 'ja-respondida'
+  | 'encerrada'
   | 'erro';
 
 const CHAVE_DISPOSITIVO = 'sga.pesquisa.dispositivo';
 
+/** De quanto em quanto tempo a página confere se o atendimento já terminou. */
+const INTERVALO_ACOMPANHAMENTO_MS = 10_000;
+
+/**
+ * Atende dois endereços:
+ * - /p/:codigo — pesquisa anônima da unidade (QR do guichê);
+ * - /a/:token  — avaliação do atendimento de UMA senha (QR impresso no cupom).
+ *   Se o cidadão ler o QR antes de ser atendido, acompanha a senha ao vivo e
+ *   o formulário abre sozinho quando o atendimento termina.
+ */
 @Component({
   selector: 'app-pesquisa',
   templateUrl: './pesquisa.html',
@@ -25,10 +37,16 @@ export class PesquisaComponent {
   private readonly rota = inject(ActivatedRoute);
 
   private readonly codigo = this.rota.snapshot.paramMap.get('codigo') ?? '';
+  private readonly token = this.rota.snapshot.paramMap.get('token');
   private readonly respostas = new Map<string, string>();
+  private temporizador: ReturnType<typeof setTimeout> | null = null;
+
+  /** Avaliação de uma senha (QR do cupom) em vez da pesquisa anônima. */
+  protected readonly modoSenha = this.token !== null;
 
   protected readonly estado = signal<Estado>('carregando');
   protected readonly pesquisa = signal<PesquisaPublica | null>(null);
+  protected readonly avaliacao = signal<AvaliacaoSenha | null>(null);
   protected readonly indice = signal(0);
   protected readonly textoAtual = signal('');
   protected readonly mensagemErro = signal('');
@@ -53,11 +71,24 @@ export class PesquisaComponent {
   });
 
   constructor() {
+    // Celular bloqueado durante a espera: ao voltar, confere na hora.
+    const aoVoltar = () => {
+      if (document.visibilityState === 'visible' && this.estado() === 'acompanhando') this.acompanhar(0);
+    };
+    document.addEventListener('visibilitychange', aoVoltar);
+    inject(DestroyRef).onDestroy(() => {
+      document.removeEventListener('visibilitychange', aoVoltar);
+      this.pararAcompanhamento();
+    });
     this.carregar();
   }
 
   private async carregar(): Promise<void> {
     try {
+      if (this.token !== null) {
+        this.aplicarSituacao(await this.api.get<AvaliacaoSenha>(`/public/avaliacoes/${this.token}`));
+        return;
+      }
       const dados = await this.api.get<PesquisaPublica>(`/public/pesquisas/${this.codigo}`);
       this.pesquisa.set(dados);
       this.estado.set('formulario');
@@ -68,6 +99,49 @@ export class PesquisaComponent {
         this.mensagemErro.set(mensagemDeErro(e));
         this.estado.set('erro');
       }
+    }
+  }
+
+  private aplicarSituacao(dados: AvaliacaoSenha): void {
+    this.avaliacao.set(dados);
+    switch (dados.situacao) {
+      case 'AGUARDANDO':
+      case 'CHAMADA':
+      case 'EM_ATENDIMENTO':
+        this.estado.set('acompanhando');
+        this.acompanhar();
+        return;
+      case 'LIBERADA':
+        this.pararAcompanhamento();
+        this.pesquisa.set(dados.pesquisa ?? null);
+        this.estado.set('formulario');
+        return;
+      case 'RESPONDIDA':
+        this.pararAcompanhamento();
+        this.estado.set('ja-respondida');
+        return;
+      default: // EXPIRADA, INDISPONIVEL
+        this.pararAcompanhamento();
+        this.estado.set('encerrada');
+    }
+  }
+
+  /** Confere a situação da senha periodicamente enquanto o cidadão espera. */
+  private acompanhar(atraso = INTERVALO_ACOMPANHAMENTO_MS): void {
+    this.pararAcompanhamento();
+    this.temporizador = setTimeout(async () => {
+      try {
+        this.aplicarSituacao(await this.api.get<AvaliacaoSenha>(`/public/avaliacoes/${this.token}`));
+      } catch {
+        this.acompanhar(); // oscilação de rede: tenta de novo no próximo ciclo
+      }
+    }, atraso);
+  }
+
+  private pararAcompanhamento(): void {
+    if (this.temporizador !== null) {
+      clearTimeout(this.temporizador);
+      this.temporizador = null;
     }
   }
 
@@ -151,18 +225,18 @@ export class PesquisaComponent {
       perguntaId,
       valor,
     }));
+    const rota = this.modoSenha
+      ? `/public/avaliacoes/${this.token}/respostas`
+      : `/public/pesquisas/${this.codigo}/respostas`;
     try {
-      await this.api.post(`/public/pesquisas/${this.codigo}/respostas`, {
-        dispositivoHash: this.dispositivoHash(),
-        itens,
-      });
+      await this.api.post(rota, { dispositivoHash: this.dispositivoHash(), itens });
       this.estado.set('sucesso');
     } catch (e) {
-      const mensagem = mensagemDeErro(e);
-      if (mensagem.toLowerCase().includes('já foi respondida')) {
+      const mensagem = mensagemDeErro(e).toLowerCase();
+      if (mensagem.includes('já foi respondida') || mensagem.includes('já foi avaliado')) {
         this.estado.set('ja-respondida');
       } else {
-        this.mensagemErro.set(mensagem);
+        this.mensagemErro.set(mensagemDeErro(e));
         this.estado.set('erro');
       }
     }

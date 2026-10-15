@@ -2,9 +2,13 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { Injectable, InjectionToken, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-/** Base da API — sobrescreva no app.config em produção. */
+/**
+ * Base da API — o mesmo host que serviu a página, na porta 3000. Assim o
+ * celular que abre a pesquisa pelo IP da máquina (QR da senha) fala com a
+ * API pelo mesmo IP. Sobrescreva no app.config em produção.
+ */
 export const API_URL = new InjectionToken<string>('API_URL', {
-  factory: () => 'http://localhost:3000/api/v1',
+  factory: () => `${location.protocol}//${location.hostname}:3000/api/v1`,
 });
 
 /** Extrai a mensagem de erro amigável enviada pela API. */

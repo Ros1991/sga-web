@@ -15,9 +15,54 @@
             <path d="m20 20-3.5-3.5" />
           </svg>
         </div>
-        <h1>Pesquisa não encontrada ou encerrada.</h1>
-        <p>Verifique o QR Code no guichê e tente novamente.</p>
+        @if (modoSenha) {
+          <h1>Link de avaliação inválido.</h1>
+          <p>Confira o QR code impresso na sua senha e tente novamente.</p>
+        } @else {
+          <h1>Pesquisa não encontrada ou encerrada.</h1>
+          <p>Verifique o QR Code no guichê e tente novamente.</p>
+        }
       </div>
+    }
+
+    @case ('acompanhando') {
+      @if (avaliacao(); as a) {
+        <div class="centro cartao acompanhando">
+          <span class="cabecalho__marca">DETRAN-DF</span>
+          <p class="acompanhando__rotulo">Sua senha</p>
+          <div class="acompanhando__codigo">{{ a.senha.codigo }}</div>
+          <p class="acompanhando__servico">{{ a.senha.subservico }}</p>
+          <p class="acompanhando__unidade">{{ a.senha.unidade }}</p>
+
+          @switch (a.situacao) {
+            @case ('AGUARDANDO') {
+              <div class="situacao">
+                <span class="situacao__pulso" aria-hidden="true"></span>
+                Aguardando chamada
+              </div>
+            }
+            @case ('CHAMADA') {
+              <div class="situacao situacao--chamada">
+                <span class="situacao__pulso" aria-hidden="true"></span>
+                Sua senha foi chamada!
+                @if (a.senha.guiche) { Dirija-se ao guichê {{ a.senha.guiche }}. }
+              </div>
+            }
+            @case ('EM_ATENDIMENTO') {
+              <div class="situacao situacao--atendimento">
+                <span class="situacao__pulso" aria-hidden="true"></span>
+                Em atendimento
+                @if (a.senha.guiche) { no guichê {{ a.senha.guiche }} }
+              </div>
+            }
+          }
+
+          <p class="acompanhando__dica">
+            A avaliação abre aqui sozinha quando o seu atendimento terminar.
+            Pode deixar esta página aberta.
+          </p>
+        </div>
+      }
     }
 
     @case ('formulario') {
@@ -26,6 +71,12 @@
           <span class="cabecalho__marca">DETRAN-DF</span>
           <h1>{{ p.nome }}</h1>
           <p>{{ p.unidade }}</p>
+          @if (avaliacao(); as a) {
+            <p class="cabecalho__senha">
+              Senha <strong>{{ a.senha.codigo }}</strong> · {{ a.senha.subservico }}
+              @if (a.senha.guiche) { · Guichê {{ a.senha.guiche }} }
+            </p>
+          }
         </header>
 
         <section class="progresso" aria-label="Progresso da pesquisa">
@@ -158,8 +209,26 @@
             <path d="M20 6 9 17l-5-5" />
           </svg>
         </div>
-        <h1>Você já respondeu esta pesquisa. Obrigado!</h1>
-        <p>Cada dispositivo pode responder apenas uma vez.</p>
+        @if (modoSenha) {
+          <h1>Este atendimento já foi avaliado. Obrigado!</h1>
+          <p>Cada senha pode ser avaliada uma única vez.</p>
+        } @else {
+          <h1>Você já respondeu esta pesquisa. Obrigado!</h1>
+          <p>Cada dispositivo pode responder apenas uma vez.</p>
+        }
+      </div>
+    }
+
+    @case ('encerrada') {
+      <div class="centro cartao aviso">
+        <div class="aviso__icone aviso__icone--neutro" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" />
+          </svg>
+        </div>
+        <h1>{{ avaliacao()?.situacao === 'EXPIRADA' ? 'Prazo de avaliação encerrado' : 'Avaliação indisponível' }}</h1>
+        <p>{{ avaliacao()?.motivo }}</p>
       </div>
     }
 

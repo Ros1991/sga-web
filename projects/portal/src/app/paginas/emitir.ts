@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import {
   Api, Autenticacao, NivelPrioridade, Senha, Toasts, Unidade, UnidadeDetalhe, mensagemDeErro,
 } from 'compartilhado';
+import * as QRCode from 'qrcode';
 
 @Component({
   selector: 'pagina-emitir',
@@ -26,7 +27,13 @@ import {
         <p>Senha emitida:</p>
         <span class="codigo">{{ s.codigo }}</span>
         <p class="detalhe">{{ s.subservico?.nome }} · {{ s.prioridade?.nome }}</p>
-        <button class="botao" (click)="emitida.set(null)">Emitir outra</button>
+        @if (qrAvaliacao(); as qr) {
+          <div class="avaliacao">
+            <img [src]="qr" alt="QR code para avaliar o atendimento" />
+            <p>O cidadão escaneia agora e a avaliação abre no celular dele quando o atendimento terminar.</p>
+          </div>
+        }
+        <button class="botao" (click)="emitida.set(null); qrAvaliacao.set(null)">Emitir outra</button>
       </div>
     } @else if (unidadeId) {
       <div class="cartao">
@@ -73,6 +80,10 @@ import {
     .resultado { text-align: center; padding: 40px; display: grid; gap: 10px; justify-items: center;
       .codigo { font-size: 84px; font-weight: 800; color: var(--marinho); }
       .detalhe { color: var(--texto-2); } }
+    .avaliacao { display: flex; align-items: center; gap: 16px; max-width: 460px; margin: 6px 0 8px; padding: 12px 18px 12px 12px;
+      border: 1px solid var(--borda); border-radius: 12px; text-align: left;
+      img { width: 120px; height: 120px; flex: none; background: #fff; }
+      p { margin: 0; font-size: 13.5px; color: var(--texto-2); } }
     .dica { color: var(--texto-3); }
     .centro { text-align: center; padding: 34px; }
   `],
@@ -86,6 +97,8 @@ export class EmitirPagina implements OnInit {
   readonly subservicos = signal<{ id: string; nome: string }[]>([]);
   readonly prioridades = signal<NivelPrioridade[]>([]);
   readonly emitida = signal<Senha | null>(null);
+  /** QR da avaliação daquela senha — o mesmo que o totem imprime. */
+  readonly qrAvaliacao = signal<string | null>(null);
   readonly emitindo = signal(false);
   readonly ehAdmin = this.auth.usuario()?.perfil === 'ADMIN';
 
@@ -121,6 +134,9 @@ export class EmitirPagina implements OnInit {
         subservicoId: this.subservicoId,
         prioridadeId: this.prioridadeId,
       });
+      this.qrAvaliacao.set(
+        senha.avaliacaoUrl ? await QRCode.toDataURL(senha.avaliacaoUrl, { width: 360, margin: 1 }).catch(() => null) : null,
+      );
       this.emitida.set(senha);
       this.subservicoId = '';
     } catch (e) {
