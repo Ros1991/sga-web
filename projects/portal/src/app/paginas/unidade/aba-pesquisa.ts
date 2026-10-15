@@ -4,6 +4,8 @@ import { Api, Pesquisa, TipoPergunta, Toasts, UnidadeDetalhe, mensagemDeErro } f
 import * as QRCode from 'qrcode';
 
 interface PerguntaForm {
+  /** Pergunta já salva — volta no PUT para ser editada no lugar e manter as respostas. */
+  id?: string;
   tipo: TipoPergunta;
   texto: string;
   escalaMax: number;
@@ -91,7 +93,12 @@ interface Resultados {
           <header><h3>Resultados · {{ r.totalRespostas }} resposta(s)</h3></header>
           @for (item of r.porPergunta; track item.pergunta.id) {
             <div class="resultado">
-              <strong>{{ item.pergunta.ordem }}. {{ item.pergunta.texto }}</strong>
+              @if (item.pergunta.removidaEm) {
+                <strong>{{ item.pergunta.texto }}</strong>
+                <span class="etiqueta etiqueta--cinza" title="Saiu da pesquisa; as respostas já dadas continuam aqui">removida</span>
+              } @else {
+                <strong>{{ item.pergunta.ordem }}. {{ item.pergunta.texto }}</strong>
+              }
               @if (item.pergunta.tipo === 'NOTA') {
                 <p>Média: <b>{{ item.media ?? '—' }}</b> ({{ item.total }} respostas)</p>
               } @else if (item.pergunta.tipo === 'SIM_NAO') {
@@ -124,6 +131,7 @@ interface Resultados {
       img { width: 240px; height: 240px; margin: 8px auto; }
       .url { font-size: 12px; color: var(--texto-3); word-break: break-all; } }
     .resultado { border-top: 1px solid var(--borda); padding: 12px 0; font-size: 14px;
+      .etiqueta { margin-left: 8px; font-size: 11px; padding: 1px 8px; }
       .sim { color: var(--verde); } .nao { color: var(--vermelho); }
       .texto-livre { color: var(--texto-2); font-style: italic; margin: 4px 0; } }
   `],
@@ -151,10 +159,7 @@ export class AbaPesquisa implements OnInit {
     if (daUnidade.length) {
       const detalhe = await this.api.get<Pesquisa>(`/pesquisas/${daUnidade[0].id}`);
       this.pesquisas.set([detalhe]);
-      this.perguntas = (detalhe.perguntas ?? []).map((q) => ({
-        tipo: q.tipo, texto: q.texto, escalaMax: q.escalaMax ?? 5, obrigatoria: q.obrigatoria,
-      }));
-      if (!this.perguntas.length) this.adicionarPergunta();
+      this.preencherPerguntas(detalhe);
     } else {
       this.pesquisas.set([]);
     }
@@ -173,6 +178,13 @@ export class AbaPesquisa implements OnInit {
     }
   }
 
+  private preencherPerguntas(detalhe: Pesquisa) {
+    this.perguntas = (detalhe.perguntas ?? []).map((q) => ({
+      id: q.id, tipo: q.tipo, texto: q.texto, escalaMax: q.escalaMax ?? 5, obrigatoria: q.obrigatoria,
+    }));
+    if (!this.perguntas.length) this.adicionarPergunta();
+  }
+
   adicionarPergunta() {
     this.perguntas.push({ tipo: 'NOTA', texto: '', escalaMax: 5, obrigatoria: false });
   }
@@ -187,7 +199,9 @@ export class AbaPesquisa implements OnInit {
     }
     this.salvando.set(true);
     try {
-      await this.api.put(`/pesquisas/${p.id}/perguntas`, { perguntas: this.perguntas });
+      const detalhe = await this.api.put<Pesquisa>(`/pesquisas/${p.id}/perguntas`, { perguntas: this.perguntas });
+      // As perguntas novas ganham id agora; sem isso o próximo salvar as recriaria.
+      this.preencherPerguntas(detalhe);
       this.toasts.sucesso('Perguntas salvas.');
     } catch (e) {
       this.toasts.erro(mensagemDeErro(e));
