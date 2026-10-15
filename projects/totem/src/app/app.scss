@@ -262,37 +262,104 @@
   padding: 0 28px;
 }
 
+// Conteúdo da tela da senha (coluna única; ao lado do cupom no modo demonstração)
+.senha__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+// ---------- Modo demonstração: cupom "saindo" da impressora na tela ----------
+.tela-demo {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 40px 80px;
+  max-width: 1500px;
+
+  .senha__info { flex: 1 1 420px; }
+  .senha__codigo { font-size: clamp(64px, 8.5vw, 160px); }
+}
+
+.impressora {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  &__fenda {
+    position: relative;
+    z-index: 1;
+    width: 470px;
+    max-width: 90vw;
+    height: 22px;
+    border-radius: 11px;
+    background: var(--marinho);
+    box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.35), var(--sombra);
+  }
+
+  &__papel {
+    margin-top: -11px;
+    // recorta só o topo (o papel "sai" de dentro da fenda); a sombra fica inteira
+    clip-path: inset(0 -80px -80px -80px);
+  }
+
+  &__legenda {
+    margin: 4px 0 0;
+    font-size: 15px;
+    color: var(--texto-3);
+  }
+}
+
+.cupom.cupom--previa { // composto: o .cupom { display: none } vem depois
+  display: block;
+  zoom: 1.45; // ~ tamanho real numa tela de 1080p, e o QR fica fácil de ler
+  background: #fff;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 10px 24px rgba(17, 23, 37, 0.18);
+  animation: sair-da-impressora 1.2s ease-out;
+}
+
+// Telas mais baixas (notebook, escala do Windows): o cupom inteiro, com o QR, cabe sem rolar
+@media (max-height: 960px) { .cupom.cupom--previa { zoom: 1.15; } }
+@media (max-height: 800px) { .cupom.cupom--previa { zoom: 0.95; } }
+@media (max-height: 660px) { .cupom.cupom--previa { zoom: 0.8; } }
+
+@keyframes sair-da-impressora {
+  from { transform: translateY(-70%); }
+  to { transform: none; }
+}
+
 // ---------- Cupom térmico 80mm ----------
-// Na tela: escondido. Na impressão: única coisa visível.
-.cupom { display: none; }
+// Na tela: escondido (exceto a prévia do modo demonstração). Na impressão:
+// única coisa visível.
+.cupom {
+  display: none;
+  width: 72mm;
+  margin: 0 auto;
+  padding: 4mm 2mm 8mm;
+  text-align: center;
+  color: #000;
+  font-family: var(--fonte);
+
+  &__marca { font-family: var(--fonte-marca); font-size: 22px; strong { font-weight: 700; } }
+  &__unidade { font-size: 12px; margin-top: 1mm; }
+  &__linha { border: 0; border-top: 1px dashed #000; margin: 3mm 0; }
+  &__rotulo { font-size: 11px; letter-spacing: .3em; }
+  &__codigo { font-family: var(--fonte-marca); font-size: 46px; font-weight: 700; line-height: 1.1; }
+  &__servico { font-size: 13px; font-weight: 700; margin-top: 2mm; }
+  &__subservico { font-size: 12px; }
+  &__prioridade { font-size: 11px; border: 1px solid #000; border-radius: 3mm; display: inline-block; padding: 0.5mm 3mm; margin-top: 1.5mm; }
+  &__data { font-size: 11px; }
+  &__aviso { font-size: 10px; margin-top: 2mm; }
+  &__avalie { font-size: 12px; font-weight: 700; letter-spacing: .12em; }
+  &__qr { display: block; width: 34mm; height: 34mm; margin: 2mm auto 1.5mm; }
+  &__qr-texto { font-size: 10px; line-height: 1.3; padding: 0 5mm; }
+}
 
 @media print {
   @page { size: 80mm auto; margin: 0; }
 
   :host, body { background: #fff !important; }
   .tela-cheia { display: none !important; }
-
-  .cupom {
-    display: block;
-    width: 72mm;
-    margin: 0 auto;
-    padding: 4mm 2mm 8mm;
-    text-align: center;
-    color: #000;
-    font-family: var(--fonte);
-
-    &__marca { font-family: var(--fonte-marca); font-size: 22px; strong { font-weight: 700; } }
-    &__unidade { font-size: 12px; margin-top: 1mm; }
-    &__linha { border: 0; border-top: 1px dashed #000; margin: 3mm 0; }
-    &__rotulo { font-size: 11px; letter-spacing: .3em; }
-    &__codigo { font-family: var(--fonte-marca); font-size: 46px; font-weight: 700; line-height: 1.1; }
-    &__servico { font-size: 13px; font-weight: 700; margin-top: 2mm; }
-    &__subservico { font-size: 12px; }
-    &__prioridade { font-size: 11px; border: 1px solid #000; border-radius: 3mm; display: inline-block; padding: 0.5mm 3mm; margin-top: 1.5mm; }
-    &__data { font-size: 11px; }
-    &__aviso { font-size: 10px; margin-top: 2mm; }
-    &__avalie { font-size: 12px; font-weight: 700; letter-spacing: .12em; }
-    &__qr { display: block; width: 34mm; height: 34mm; margin: 2mm auto 1.5mm; }
-    &__qr-texto { font-size: 10px; line-height: 1.3; padding: 0 5mm; }
-  }
+  .cupom { display: block; }
 }

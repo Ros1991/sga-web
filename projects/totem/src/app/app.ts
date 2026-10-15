@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, ElementRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import * as QRCode from 'qrcode';
 import {
@@ -16,7 +17,7 @@ type Tela = 'carregando' | 'erro' | 'servico' | 'subservico' | 'prioridade' | 's
 
 @Component({
   selector: 'app-root',
-  imports: [ToastsComponent],
+  imports: [NgTemplateOutlet, ToastsComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -34,6 +35,12 @@ export class App implements OnInit, OnDestroy {
   protected readonly senha = signal<Senha | null>(null);
   protected readonly prioridadeEscolhida = signal<NivelPrioridade | null>(null);
   protected readonly impressaoAtiva = signal(false);
+  /**
+   * Demonstração sem impressora (`&demo=1`, persiste como o token): o cupom
+   * aparece na tela e a senha não volta sozinha ao início, para dar tempo de
+   * ler o QR com o celular.
+   */
+  protected readonly modoDemo = signal(false);
   /** QR da avaliação desta senha (SVG em data URL) — sai no cupom e na tela. */
   protected readonly qrAvaliacao = signal<string | null>(null);
   private readonly qrCupom = viewChild<ElementRef<HTMLImageElement>>('qrCupom');
@@ -85,12 +92,21 @@ export class App implements OnInit, OnDestroy {
     // Impressão térmica: SEMPRE imprime ao emitir a senha. No quiosque, rode
     // o Chrome com --kiosk --kiosk-printing para o window.print() sair direto
     // na impressora padrão, sem diálogo. Para testar sem impressora, ative o
-    // totem com &imprimir=0 (persiste como o token).
+    // totem com &imprimir=0 (persiste como o token); para demonstrar sem
+    // impressora, &demo=1 mostra o cupom na tela (também desliga a impressão).
     const params = new URLSearchParams(location.search);
     if (params.has('imprimir')) {
       localStorage.setItem('sga_totem_imprimir', params.get('imprimir') === '0' ? '0' : '1');
     }
-    this.impressaoAtiva.set(localStorage.getItem('sga_totem_imprimir') !== '0');
+    if (params.has('demo')) {
+      localStorage.setItem('sga_totem_demo', params.get('demo') === '1' ? '1' : '0');
+    }
+    // &imprimir=1 é o totem de verdade: desliga uma demonstração que tenha ficado salva
+    if (params.get('imprimir') === '1' && params.get('demo') !== '1') {
+      localStorage.setItem('sga_totem_demo', '0');
+    }
+    this.modoDemo.set(localStorage.getItem('sga_totem_demo') === '1');
+    this.impressaoAtiva.set(!this.modoDemo() && localStorage.getItem('sga_totem_imprimir') !== '0');
 
     const config = await this.sessao.iniciar();
     if (!config) {
@@ -146,7 +162,7 @@ export class App implements OnInit, OnDestroy {
       this.prioridadeEscolhida.set(prioridade);
       this.senha.set(senha);
       this.tela.set('senha');
-      this.iniciarContagem();
+      if (!this.modoDemo()) this.iniciarContagem();
       if (this.impressaoAtiva()) {
         void this.imprimirQuandoPronto();
       }
