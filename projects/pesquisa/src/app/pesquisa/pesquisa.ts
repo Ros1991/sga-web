@@ -17,6 +17,21 @@ type Estado =
 
 const CHAVE_DISPOSITIVO = 'sga.pesquisa.dispositivo';
 
+/**
+ * UUID v4 que identifica o aparelho. crypto.randomUUID() só existe em contexto
+ * seguro (HTTPS ou localhost): no celular, que abre a pesquisa por
+ * http://IP-da-máquina, ele é undefined e derrubava o envio da resposta.
+ * getRandomValues funciona em qualquer contexto.
+ */
+function novoIdentificador(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40; // versão 4
+  b[8] = (b[8] & 0x3f) | 0x80; // variante RFC 4122
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 /** De quanto em quanto tempo a página confere se o atendimento já terminou. */
 const INTERVALO_ACOMPANHAMENTO_MS = 10_000;
 
@@ -211,10 +226,19 @@ export class PesquisaComponent {
   }
 
   private dispositivoHash(): string {
-    let hash = localStorage.getItem(CHAVE_DISPOSITIVO);
+    let hash: string | null = null;
+    try {
+      hash = localStorage.getItem(CHAVE_DISPOSITIVO);
+    } catch {
+      // armazenamento bloqueado (aba anônima de alguns celulares): segue sem lembrar
+    }
     if (!hash) {
-      hash = crypto.randomUUID();
-      localStorage.setItem(CHAVE_DISPOSITIVO, hash);
+      hash = novoIdentificador();
+      try {
+        localStorage.setItem(CHAVE_DISPOSITIVO, hash);
+      } catch {
+        // idem
+      }
     }
     return hash;
   }
