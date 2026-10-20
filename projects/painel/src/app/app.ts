@@ -34,6 +34,7 @@ interface MidiaExibida {
 export class App implements OnInit, OnDestroy {
   private readonly api = inject(Api);
   private readonly sessao = inject(SessaoDispositivo);
+  protected readonly conectando = this.sessao.conectando;
   private readonly realtime = inject(Realtime);
   private readonly sanitizer = inject(DomSanitizer);
 

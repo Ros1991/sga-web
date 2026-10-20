@@ -5,7 +5,9 @@
     <div class="tela-cheia">
       <div class="icone-grande" aria-hidden="true">&#9203;</div>
       <h1 class="titulo-cheio">Carregando...</h1>
-      <p class="texto-cheio">Preparando o autoatendimento.</p>
+      <p class="texto-cheio">
+        {{ sessao.conectando() ? 'Sem conexão com o servidor — tentando de novo…' : 'Preparando o autoatendimento.' }}
+      </p>
     </div>
   }
 
