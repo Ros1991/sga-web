@@ -3,12 +3,17 @@ import { Injectable, InjectionToken, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 /**
- * Base da API — o mesmo host que serviu a página, na porta 3000. Assim o
- * celular que abre a pesquisa pelo IP da máquina (QR da senha) fala com a
- * API pelo mesmo IP. Sobrescreva no app.config em produção.
+ * Base da API. Em servidor (Railway etc.) vem de /config.js, gerado pelo
+ * servidor dos apps a partir da variável API_URL — o mesmo build serve
+ * qualquer ambiente. Sem ela (desenvolvimento): o mesmo host que serviu a
+ * página, na porta 3000, para o celular que abre a pesquisa pelo IP da
+ * máquina falar com a API pelo mesmo IP.
  */
 export const API_URL = new InjectionToken<string>('API_URL', {
-  factory: () => `${location.protocol}//${location.hostname}:3000/api/v1`,
+  factory: () => {
+    const configurada = (globalThis as { __SGA_CONFIG__?: { apiUrl?: string | null } }).__SGA_CONFIG__?.apiUrl;
+    return configurada ? configurada.replace(/\/+$/, '') : `${location.protocol}//${location.hostname}:3000/api/v1`;
+  },
 });
 
 /** Extrai a mensagem de erro amigável enviada pela API. */

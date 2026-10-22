@@ -27,6 +27,26 @@ Build de produção: `npx ng build <app>`. A URL da API é o token de injeção
 `API_URL` da lib `compartilhado` (padrão `http://localhost:3000/api/v1`) —
 sobrescreva no `app.config.ts` de cada app para outros ambientes.
 
+## Deploy (Railway)
+
+Cada app (portal, totem, painel, pesquisa) é um serviço do Railway ligado a
+este repositório; cada push na `main` publica os quatro. Todos usam o mesmo
+`railway.json`: o build é `ng build $SGA_APP` e o start é `node servidor.mjs`
+(servidor sem dependências: arquivos do app, rotas do app → index.html, gzip,
+cache longo nos arquivos com hash, saúde em `/saude`). Node 22 por `.node-version`.
+
+Variáveis de cada serviço:
+
+| Variável | Valor |
+|---|---|
+| `SGA_APP` | `portal`, `totem`, `painel` ou `pesquisa` |
+| `API_URL` | endereço da API, ex.: `https://sga-api.up.railway.app/api/v1` |
+
+O endereço da API chega aos apps em tempo de execução por `/config.js`
+(gerado pelo `servidor.mjs` a partir de `API_URL`): o mesmo build serve
+qualquer ambiente. Em desenvolvimento o `public/config.js` fica vazio e os
+apps usam o mesmo host na porta 3000.
+
 ## Decisões
 
 - **Navegação fixa por perfil** (ADMIN, GERENTE, ATENDENTE, TRIAGEM) — sem menus dinâmicos.
