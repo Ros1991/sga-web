@@ -42,7 +42,7 @@
               </div>
             }
             @case ('CHAMADA') {
-              <div class="situacao situacao--chamada">
+              <div class="situacao situacao--chamada" [class.situacao--nova]="chamadaNova()" role="alert">
                 <span class="situacao__pulso" aria-hidden="true"></span>
                 Sua senha foi chamada!
                 @if (a.senha.guiche) { Dirija-se ao guichê {{ a.senha.guiche }}. }
@@ -54,6 +54,24 @@
                 Em atendimento
                 @if (a.senha.guiche) { no guichê {{ a.senha.guiche }} }
               </div>
+            }
+          }
+
+          @switch (aviso.estado()) {
+            @case ('desligado') {
+              <button type="button" class="aviso-som" (click)="ativarAviso()">
+                <span aria-hidden="true">🔔</span> Avisar com som quando eu for chamado
+              </button>
+            }
+            @case ('ativo') {
+              <p class="aviso-som aviso-som--ativo" aria-live="polite">
+                <span aria-hidden="true">🔔</span>
+                @if (aviso.telaAcesa()) {
+                  Aviso sonoro ligado. A tela vai ficar acesa enquanto você espera; deixe o volume alto.
+                } @else {
+                  Aviso sonoro ligado. Não deixe a tela apagar nem troque de aplicativo: com a tela apagada o celular não consegue avisar.
+                }
+              </p>
             }
           }
 
@@ -116,6 +134,21 @@
                 </div>
               }
 
+              @case ('OPCOES') {
+                <div class="opcoes" role="group" [attr.aria-label]="pergunta.texto">
+                  @for (o of pergunta.opcoes ?? []; track o.valor) {
+                    <button
+                      type="button"
+                      class="opcoes__botao"
+                      [class.opcoes__botao--ativo]="valorSelecionado(pergunta.id) === '' + o.valor"
+                      (click)="responder('' + o.valor)"
+                    >
+                      {{ o.rotulo }}
+                    </button>
+                  }
+                </div>
+              }
+
               @case ('SIM_NAO') {
                 <div class="sim-nao">
                   <button
@@ -168,6 +201,13 @@
                   </button>
                 </div>
               }
+            }
+
+            <!-- pergunta opcional de nota, opções ou sim/não: dá para seguir sem responder -->
+            @if (!pergunta.obrigatoria && pergunta.tipo !== 'TEXTO') {
+              <div class="pular-opcional">
+                <button type="button" class="botao botao--fantasma botao-alto" (click)="pular()">Pular</button>
+              </div>
             }
           </section>
 

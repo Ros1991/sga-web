@@ -129,6 +129,44 @@
   }
 }
 
+// recém-chamada: pisca alguns segundos para quem está sem som
+.situacao--nova {
+  animation: destacar 0.9s ease-in-out 6;
+}
+
+@keyframes destacar {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 0 6px var(--vermelho-suave), 0 0 0 9px var(--vermelho); }
+}
+
+// ---------- Aviso sonoro ----------
+.aviso-som {
+  margin-top: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--azul);
+  color: #fff;
+  font: 700 15.5px var(--fonte);
+  cursor: pointer;
+
+  &:active { transform: translateY(1px); }
+
+  &--ativo {
+    background: var(--verde-suave);
+    color: var(--verde);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: default;
+  }
+}
+
 @keyframes pulsar {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(0.6); opacity: 0.45; }
@@ -224,6 +262,47 @@
     color: var(--texto-3);
     margin-top: 8px;
   }
+}
+
+// ---------- OPÇÕES COM TEXTO (ordem configurada no portal) ----------
+.opcoes {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+
+  &__botao {
+    min-height: 56px;
+    padding: 12px 18px;
+    border: 1.5px solid var(--borda);
+    border-radius: 12px;
+    background: var(--superficie);
+    color: var(--marinho);
+    font: 700 17px var(--fonte);
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.05s;
+
+    &:hover {
+      border-color: var(--azul);
+      background: var(--azul-suave);
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+
+    &--ativo {
+      background: var(--azul);
+      border-color: var(--azul);
+      color: #fff;
+    }
+  }
+}
+
+.pular-opcional {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
 }
 
 // ---------- SIM / NÃO ----------

@@ -10,7 +10,17 @@ interface PerguntaForm {
   texto: string;
   escalaMax: number;
   obrigatoria: boolean;
+  /** Botões da pergunta OPCOES, na ordem em que o cidadão os vê. */
+  opcoes: { rotulo: string; valor: number }[];
 }
+
+/** Sugestão inicial de botões (o gestor troca textos, valores e ordem). */
+const OPCOES_SUGERIDAS = [
+  { rotulo: 'Péssimo', valor: 1 },
+  { rotulo: 'Ruim', valor: 2 },
+  { rotulo: 'Bom', valor: 3 },
+  { rotulo: 'Muito bom', valor: 4 },
+];
 
 interface Resultados {
   totalRespostas: number;
@@ -46,11 +56,12 @@ interface Resultados {
           </div>
 
           <h4>Perguntas (na ordem em que o cidadão responde)</h4>
-          @for (q of perguntas; track $index) {
+          @for (q of perguntas; track $index; let i = $index) {
             <div class="pergunta">
               <span class="ordem">{{ $index + 1 }}</span>
-              <select [(ngModel)]="q.tipo" [name]="'tipo' + $index">
-                <option value="NOTA">Nota</option>
+              <select [(ngModel)]="q.tipo" [name]="'tipo' + $index" (ngModelChange)="aoTrocarTipo(q)">
+                <option value="NOTA">Nota (números)</option>
+                <option value="OPCOES">Opções com texto</option>
                 <option value="SIM_NAO">Sim/Não</option>
                 <option value="TEXTO">Texto livre</option>
               </select>
@@ -64,6 +75,28 @@ interface Resultados {
               <label class="obrig"><input type="checkbox" [(ngModel)]="q.obrigatoria" [name]="'ob' + $index" /> obrig.</label>
               <button type="button" class="botao botao--fantasma" (click)="removerPergunta($index)" [disabled]="perguntas.length === 1">✕</button>
             </div>
+            @if (q.tipo === 'OPCOES') {
+              <div class="opcoes-editor">
+                <div class="opcoes-cabeca">
+                  <span>Botões, na ordem em que o cidadão vê</span>
+                  <span class="col-valor" title="Entra nas médias e no percentual de satisfação; o maior valor vale 100%">Valor</span>
+                </div>
+                @for (o of q.opcoes; track $index; let j = $index, primeira = $first, ultima = $last) {
+                  <div class="opcao-linha">
+                    <span class="opcao-ordem">{{ j + 1 }}</span>
+                    <input [(ngModel)]="o.rotulo" [name]="'op' + i + '_' + j" placeholder="Texto do botão (ex.: Muito bom)" maxlength="60" />
+                    <input type="number" class="valor" [(ngModel)]="o.valor" [name]="'val' + i + '_' + j" min="0" max="100" step="1" />
+                    <button type="button" class="botao botao--fantasma seta" (click)="moverOpcao(q, j, -1)" [disabled]="primeira" title="Subir">↑</button>
+                    <button type="button" class="botao botao--fantasma seta" (click)="moverOpcao(q, j, 1)" [disabled]="ultima" title="Descer">↓</button>
+                    <button type="button" class="botao botao--fantasma seta" (click)="q.opcoes.splice(j, 1)" [disabled]="q.opcoes.length <= 2" title="Remover">✕</button>
+                  </div>
+                }
+                <div class="opcoes-rodape">
+                  <button type="button" class="botao botao--contorno" (click)="q.opcoes.push({ rotulo: '', valor: proximoValor(q) })" [disabled]="q.opcoes.length >= 10">+ Opção</button>
+                  <small>O valor entra nas médias e no percentual de satisfação: o maior valor vale 100%.</small>
+                </div>
+              </div>
+            }
           }
           <div class="rodape-perguntas">
             <button class="botao botao--contorno" (click)="adicionarPergunta()">+ Pergunta</button>
@@ -101,6 +134,15 @@ interface Resultados {
               }
               @if (item.pergunta.tipo === 'NOTA') {
                 <p>Média: <b>{{ item.media ?? '—' }}</b> ({{ item.total }} respostas)</p>
+              } @else if (item.pergunta.tipo === 'OPCOES') {
+                <p>Média: <b>{{ item.media ?? '—' }}</b>@if (item.percentual !== null) { · satisfação <b>{{ item.percentual }}%</b> } ({{ item.total }} respostas)</p>
+                @for (d of item.distribuicao; track d.valor) {
+                  <div class="barra-opcao">
+                    <span class="barra-opcao__rotulo">{{ d.rotulo }} <small>({{ d.valor }})</small></span>
+                    <span class="barra-opcao__trilha"><span [style.width.%]="item.total ? (d.total * 100) / item.total : 0"></span></span>
+                    <span class="barra-opcao__total">{{ d.total }}</span>
+                  </div>
+                }
               } @else if (item.pergunta.tipo === 'SIM_NAO') {
                 <p><b class="sim">Sim: {{ item.sim }}</b> · <b class="nao">Não: {{ item.nao }}</b></p>
               } @else {
@@ -120,13 +162,28 @@ interface Resultados {
         h3 { font-size: 17px; display: inline; margin-right: 10px; } }
       h4 { font-size: 13px; color: var(--texto-2); margin: 14px 0 10px; } }
     .acoes button { padding: 6px 10px; font-size: 13px; }
-    .pergunta { display: grid; grid-template-columns: 26px 120px 1fr auto auto auto; gap: 8px; align-items: center; margin-bottom: 8px;
+    .pergunta { display: grid; grid-template-columns: 26px 168px 1fr auto auto auto; gap: 8px; align-items: center; margin-bottom: 8px;
       .ordem { width: 26px; height: 26px; border-radius: 50%; background: var(--marinho); color: #fff;
         display: grid; place-items: center; font-size: 12px; font-weight: 700; }
       select, input[type=text], input:not([type]) { padding: 8px 10px; border: 1.5px solid var(--borda); border-radius: 8px; font: 13.5px var(--fonte); }
       .estreito { width: 80px; }
       .obrig { font-size: 12.5px; color: var(--texto-2); display: flex; gap: 4px; align-items: center; white-space: nowrap; } }
     .rodape-perguntas { display: flex; justify-content: space-between; margin-top: 14px; }
+    .opcoes-editor { margin: -2px 0 12px 34px; padding: 10px 12px; border: 1px dashed var(--borda); border-radius: 10px; background: var(--fundo);
+      .opcoes-cabeca { display: grid; grid-template-columns: 1fr 74px 104px; gap: 8px; font-size: 12px; color: var(--texto-3); margin: 0 0 6px 30px; }
+      .col-valor { cursor: help; }
+      .opcao-linha { display: grid; grid-template-columns: 22px 1fr 74px 32px 32px 32px; gap: 6px; align-items: center; margin-bottom: 6px;
+        input { padding: 7px 9px; border: 1.5px solid var(--borda); border-radius: 8px; font: 13.5px var(--fonte); min-width: 0; }
+        .valor { text-align: right; }
+        .seta { padding: 4px 0; font-size: 14px; } }
+      .opcao-ordem { font-size: 12px; font-weight: 700; color: var(--texto-3); text-align: center; }
+      .opcoes-rodape { display: flex; gap: 12px; align-items: center; margin-top: 4px;
+        small { color: var(--texto-3); font-size: 12px; } } }
+    .barra-opcao { display: grid; grid-template-columns: minmax(90px, 160px) 1fr 32px; gap: 8px; align-items: center; margin: 4px 0; font-size: 13px;
+      small { color: var(--texto-3); }
+      &__trilha { height: 8px; border-radius: 99px; background: var(--borda); overflow: hidden;
+        span { display: block; height: 100%; background: var(--azul); } }
+      &__total { text-align: right; font-weight: 700; } }
     .qr-caixa { text-align: center; width: min(380px, 100%);
       img { width: 240px; height: 240px; margin: 8px auto; }
       .url { font-size: 12px; color: var(--texto-3); word-break: break-all; } }
@@ -180,13 +237,32 @@ export class AbaPesquisa implements OnInit {
 
   private preencherPerguntas(detalhe: Pesquisa) {
     this.perguntas = (detalhe.perguntas ?? []).map((q) => ({
-      id: q.id, tipo: q.tipo, texto: q.texto, escalaMax: q.escalaMax ?? 5, obrigatoria: q.obrigatoria,
+      // em OPCOES a escala é o maior valor das opções (calculada na API): não volta como escala de nota
+      id: q.id, tipo: q.tipo, texto: q.texto, escalaMax: q.tipo === 'NOTA' ? (q.escalaMax ?? 5) : 5, obrigatoria: q.obrigatoria,
+      opcoes: (q.opcoes ?? []).map((o) => ({ rotulo: o.rotulo, valor: o.valor })),
     }));
     if (!this.perguntas.length) this.adicionarPergunta();
   }
 
   adicionarPergunta() {
-    this.perguntas.push({ tipo: 'NOTA', texto: '', escalaMax: 5, obrigatoria: false });
+    this.perguntas.push({ tipo: 'NOTA', texto: '', escalaMax: 5, obrigatoria: false, opcoes: [] });
+  }
+
+  /** Ao virar "Opções com texto", já vem com a sugestão para o gestor ajustar. */
+  aoTrocarTipo(q: PerguntaForm) {
+    if (q.tipo === 'OPCOES' && !q.opcoes.length) q.opcoes = OPCOES_SUGERIDAS.map((o) => ({ ...o }));
+    if (q.tipo === 'NOTA' && q.escalaMax !== 5 && q.escalaMax !== 10) q.escalaMax = 5;
+  }
+
+  moverOpcao(q: PerguntaForm, de: number, passo: number) {
+    const para = de + passo;
+    if (para < 0 || para >= q.opcoes.length) return;
+    [q.opcoes[de], q.opcoes[para]] = [q.opcoes[para], q.opcoes[de]];
+  }
+
+  /** Valor sugerido para a opção nova: um acima do maior (até 100). */
+  proximoValor(q: PerguntaForm): number {
+    return Math.min(100, Math.max(0, ...q.opcoes.map((o) => Number(o.valor) || 0)) + 1);
   }
 
   removerPergunta(i: number) {
@@ -197,9 +273,21 @@ export class AbaPesquisa implements OnInit {
     if (this.perguntas.some((q) => !q.texto.trim())) {
       return this.toasts.erro('Há pergunta sem texto.');
     }
+    const semTexto = this.perguntas.find((q) => q.tipo === 'OPCOES' && q.opcoes.some((o) => !o.rotulo.trim()));
+    if (semTexto) return this.toasts.erro(`Há botão sem texto na pergunta "${semTexto.texto.trim()}".`);
+    // campo de valor apagado vira null — e null viraria 0 (0% na satisfação) sem aviso
+    const valorInvalido = (v: unknown) => v === null || v === '' || !Number.isInteger(Number(v)) || Number(v) < 0 || Number(v) > 100;
+    for (const q of this.perguntas.filter((x) => x.tipo === 'OPCOES')) {
+      const ruim = q.opcoes.find((o) => valorInvalido(o.valor));
+      if (ruim) return this.toasts.erro(`Informe um valor inteiro de 0 a 100 no botão "${ruim.rotulo.trim()}" da pergunta "${q.texto.trim()}".`);
+    }
     this.salvando.set(true);
     try {
-      const detalhe = await this.api.put<Pesquisa>(`/pesquisas/${p.id}/perguntas`, { perguntas: this.perguntas });
+      const perguntas = this.perguntas.map((q) => ({
+        id: q.id, tipo: q.tipo, texto: q.texto, escalaMax: q.tipo === 'NOTA' ? q.escalaMax : undefined, obrigatoria: q.obrigatoria,
+        opcoes: q.tipo === 'OPCOES' ? q.opcoes.map((o) => ({ rotulo: o.rotulo.trim(), valor: Number(o.valor) })) : undefined,
+      }));
+      const detalhe = await this.api.put<Pesquisa>(`/pesquisas/${p.id}/perguntas`, { perguntas });
       // As perguntas novas ganham id agora; sem isso o próximo salvar as recriaria.
       this.preencherPerguntas(detalhe);
       this.toasts.sucesso('Perguntas salvas.');

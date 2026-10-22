@@ -1,8 +1,9 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Api, mensagemDeErro } from 'compartilhado';
+import { Api, Realtime, mensagemDeErro } from 'compartilhado';
 import type { AvaliacaoSenha, PesquisaPergunta, PesquisaPublica } from 'compartilhado';
+import { AvisoSonoro } from './aviso-sonoro';
 
 type Estado =
   | 'carregando'
@@ -32,6 +33,34 @@ function novoIdentificador(): string {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
+/**
+ * Características do aparelho enviadas com a resposta, para os relatórios
+ * distinguirem celulares atrás do mesmo IP (indício de avaliações repetidas).
+ * Nada aqui identifica a pessoa. O modelo só vem em navegadores que o
+ * informam (Chrome em HTTPS); a tela entra sem depender da orientação.
+ */
+async function caracteristicasDoAparelho(): Promise<{ modelo?: string; impressao: string }> {
+  const nav = navigator as Navigator & {
+    deviceMemory?: number;
+    userAgentData?: { getHighEntropyValues?(dicas: string[]): Promise<{ model?: string }> };
+  };
+  let modelo: string | undefined;
+  try {
+    modelo = (await nav.userAgentData?.getHighEntropyValues?.(['model']))?.model || undefined;
+  } catch {
+    // navegador não informa
+  }
+  const impressao = [
+    `${Math.min(screen.width, screen.height)}x${Math.max(screen.width, screen.height)}@${devicePixelRatio}`,
+    nav.hardwareConcurrency ?? '',
+    nav.deviceMemory ?? '',
+    nav.maxTouchPoints ?? '',
+    Intl.DateTimeFormat().resolvedOptions().timeZone ?? '',
+    nav.language ?? '',
+  ].join('|');
+  return { modelo, impressao: impressao.slice(0, 200) };
+}
+
 /** De quanto em quanto tempo a página confere se o atendimento já terminou. */
 const INTERVALO_ACOMPANHAMENTO_MS = 10_000;
 
@@ -50,11 +79,28 @@ const INTERVALO_ACOMPANHAMENTO_MS = 10_000;
 export class PesquisaComponent {
   private readonly api = inject(Api);
   private readonly rota = inject(ActivatedRoute);
+  private readonly realtime = inject(Realtime);
 
   private readonly codigo = this.rota.snapshot.paramMap.get('codigo') ?? '';
   private readonly token = this.rota.snapshot.paramMap.get('token');
   private readonly respostas = new Map<string, string>();
   private temporizador: ReturnType<typeof setTimeout> | null = null;
+
+  /** Som, voz e vibração quando a senha é chamada (ativado com um toque). */
+  protected readonly aviso = new AvisoSonoro();
+  /** Destaque visual por alguns segundos quando a senha acaba de ser chamada. */
+  protected readonly chamadaNova = signal(false);
+  private tempoReal = false;
+  private primeiraLeitura = true;
+  /**
+   * Maior "chamadas" já visto. Só cresce no servidor (chamada, rechamada,
+   * transferência): avisar só quando sobe impede que uma resposta atrasada
+   * repita um aviso antigo com o guichê errado.
+   */
+  private ultimaChamadas = 0;
+  /** Leituras numeradas: resposta de uma leitura mais antiga que a já aplicada é descartada. */
+  private leituraPedida = 0;
+  private leituraAplicada = 0;
 
   /** Avaliação de uma senha (QR do cupom) em vez da pesquisa anônima. */
   protected readonly modoSenha = this.token !== null;
@@ -88,12 +134,17 @@ export class PesquisaComponent {
   constructor() {
     // Celular bloqueado durante a espera: ao voltar, confere na hora.
     const aoVoltar = () => {
-      if (document.visibilityState === 'visible' && this.estado() === 'acompanhando') this.acompanhar(0);
+      if (document.visibilityState === 'visible' && this.estado() === 'acompanhando') {
+        this.acompanhar(0);
+        void this.aviso.manterTelaAcesa(); // a trava da tela cai quando a página fica oculta
+      }
     };
     document.addEventListener('visibilitychange', aoVoltar);
     inject(DestroyRef).onDestroy(() => {
       document.removeEventListener('visibilitychange', aoVoltar);
       this.pararAcompanhamento();
+      this.desligarTempoReal();
+      this.aviso.liberarTela();
     });
     this.carregar();
   }
@@ -101,7 +152,7 @@ export class PesquisaComponent {
   private async carregar(): Promise<void> {
     try {
       if (this.token !== null) {
-        this.aplicarSituacao(await this.api.get<AvaliacaoSenha>(`/public/avaliacoes/${this.token}`));
+        await this.lerSituacao();
         return;
       }
       const dados = await this.api.get<PesquisaPublica>(`/public/pesquisas/${this.codigo}`);
@@ -119,26 +170,86 @@ export class PesquisaComponent {
 
   private aplicarSituacao(dados: AvaliacaoSenha): void {
     this.avaliacao.set(dados);
+    this.avisarSeChamada(dados);
     switch (dados.situacao) {
       case 'AGUARDANDO':
       case 'CHAMADA':
       case 'EM_ATENDIMENTO':
         this.estado.set('acompanhando');
+        this.ligarTempoReal();
         this.acompanhar();
         return;
       case 'LIBERADA':
         this.pararAcompanhamento();
+        this.desligarTempoReal();
         this.pesquisa.set(dados.pesquisa ?? null);
         this.estado.set('formulario');
         return;
       case 'RESPONDIDA':
         this.pararAcompanhamento();
+        this.desligarTempoReal();
         this.estado.set('ja-respondida');
         return;
       default: // EXPIRADA, INDISPONIVEL
         this.pararAcompanhamento();
+        this.desligarTempoReal();
         this.estado.set('encerrada');
     }
+  }
+
+  /**
+   * Avisa quando a senha passa a CHAMADA — e de novo a cada rechamada ou
+   * transferência (sobe "chamadas" ou muda o guichê). Na primeira leitura não
+   * avisa: quem abre a página já vê na tela que foi chamado.
+   */
+  private avisarSeChamada(dados: AvaliacaoSenha): void {
+    const chamadas = dados.senha.chamadas ?? 0;
+    if (dados.situacao === 'CHAMADA' && chamadas > this.ultimaChamadas && !this.primeiraLeitura) {
+      this.aviso.anunciar(dados.senha.codigo, dados.senha.guiche);
+      this.chamadaNova.set(true);
+      setTimeout(() => this.chamadaNova.set(false), 8000);
+    }
+    this.ultimaChamadas = Math.max(this.ultimaChamadas, chamadas);
+    this.primeiraLeitura = false;
+  }
+
+  /** Lê a situação da senha; resposta que chega depois de uma mais nova é descartada. */
+  private async lerSituacao(): Promise<void> {
+    const numero = ++this.leituraPedida;
+    const dados = await this.api.get<AvaliacaoSenha>(`/public/avaliacoes/${this.token}`);
+    if (numero < this.leituraAplicada) return;
+    this.leituraAplicada = numero;
+    this.aplicarSituacao(dados);
+  }
+
+  /** Toque em "Ativar aviso sonoro". Se a senha já está chamada, avisa agora. */
+  protected ativarAviso(): void {
+    this.aviso.ativar();
+    const dados = this.avaliacao();
+    if (dados?.situacao === 'CHAMADA') {
+      setTimeout(() => this.aviso.anunciar(dados.senha.codigo, dados.senha.guiche), 400);
+    }
+  }
+
+  /**
+   * A API avisa a sala desta senha a cada mudança (chamada, rechamada, início,
+   * fim): a página relê a situação na hora, sem esperar a consulta de 10 s —
+   * que continua como reserva se o tempo real cair.
+   */
+  private ligarTempoReal(): void {
+    if (this.tempoReal || !this.token) return;
+    this.tempoReal = true;
+    this.realtime.conectar({ senhaToken: this.token });
+    const reler = () => this.acompanhar(0);
+    this.realtime.em('senha', reler);
+    this.realtime.em('connect', reler); // reconectou depois de oscilar a rede: pode ter perdido um aviso
+  }
+
+  private desligarTempoReal(): void {
+    this.aviso.liberarTela();
+    if (!this.tempoReal) return;
+    this.tempoReal = false;
+    this.realtime.desconectar();
   }
 
   /** Confere a situação da senha periodicamente enquanto o cidadão espera. */
@@ -146,7 +257,7 @@ export class PesquisaComponent {
     this.pararAcompanhamento();
     this.temporizador = setTimeout(async () => {
       try {
-        this.aplicarSituacao(await this.api.get<AvaliacaoSenha>(`/public/avaliacoes/${this.token}`));
+        await this.lerSituacao();
       } catch {
         this.acompanhar(); // oscilação de rede: tenta de novo no próximo ciclo
       }
@@ -253,7 +364,7 @@ export class PesquisaComponent {
       ? `/public/avaliacoes/${this.token}/respostas`
       : `/public/pesquisas/${this.codigo}/respostas`;
     try {
-      await this.api.post(rota, { dispositivoHash: this.dispositivoHash(), itens });
+      await this.api.post(rota, { dispositivoHash: this.dispositivoHash(), itens, aparelho: await caracteristicasDoAparelho() });
       this.estado.set('sucesso');
     } catch (e) {
       const mensagem = mensagemDeErro(e).toLowerCase();

@@ -4,7 +4,13 @@ export type Perfil = 'ADMIN' | 'GERENTE' | 'ATENDENTE' | 'TRIAGEM';
 export type StatusSenha = 'AGUARDANDO' | 'CHAMADA' | 'EM_ATENDIMENTO' | 'FINALIZADA' | 'AUSENTE' | 'CANCELADA';
 export type TipoDispositivo = 'TOTEM' | 'PAINEL';
 export type TipoMidia = 'YOUTUBE' | 'IMAGEM' | 'VIDEO';
-export type TipoPergunta = 'NOTA' | 'SIM_NAO' | 'TEXTO';
+export type TipoPergunta = 'NOTA' | 'SIM_NAO' | 'TEXTO' | 'OPCOES';
+
+/** Botão de uma pergunta OPCOES: o texto que o cidadão vê e o valor usado nas médias. */
+export interface OpcaoPergunta {
+  rotulo: string;
+  valor: number;
+}
 
 export interface UsuarioLogado {
   id: string;
@@ -188,6 +194,8 @@ export interface PesquisaPergunta {
   texto: string;
   escalaMax: number | null;
   obrigatoria: boolean;
+  /** Só em perguntas OPCOES, na ordem configurada. */
+  opcoes?: OpcaoPergunta[];
 }
 
 export interface PesquisaPublica {
@@ -208,7 +216,8 @@ export type SituacaoAvaliacao =
 
 export interface AvaliacaoSenha {
   situacao: SituacaoAvaliacao;
-  senha: { codigo: string; subservico: string; unidade: string; guiche: string | null };
+  /** chamadas sobe a cada chamada, rechamada e transferência (o celular avisa de novo). */
+  senha: { codigo: string; subservico: string; unidade: string; guiche: string | null; chamadas: number };
   /** Só quando LIBERADA. */
   pesquisa?: PesquisaPublica;
   /** Explicação para RESPONDIDA, EXPIRADA e INDISPONIVEL. */

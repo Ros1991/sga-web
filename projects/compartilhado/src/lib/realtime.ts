@@ -4,14 +4,15 @@ import { API_URL } from './api';
 
 /**
  * Conexão socket.io com a API (mesma origem da API_URL, sem o /api/v1).
- * Painel usa { deviceToken }; portal usa { accessToken } (+ unidadeId p/ ADMIN).
+ * Painel usa { deviceToken }; portal usa { accessToken } (+ unidadeId p/ ADMIN);
+ * o celular do cidadão usa { senhaToken } (código do QR) e ouve só a própria senha.
  */
 @Injectable({ providedIn: 'root' })
 export class Realtime implements OnDestroy {
   private readonly base = inject(API_URL).replace(/\/api\/v1\/?$/, '');
   private socket: Socket | null = null;
 
-  conectar(auth: { deviceToken?: string; accessToken?: string }, unidadeId?: string): Socket {
+  conectar(auth: { deviceToken?: string; accessToken?: string; senhaToken?: string }, unidadeId?: string): Socket {
     this.desconectar();
     this.socket = io(this.base, {
       auth,
