@@ -62,7 +62,7 @@ const ROTULOS: Record<string, string> = {
           <div class="linha">
             <div class="campo"><label>Login *</label><input [(ngModel)]="form.login" name="login" required /></div>
             <div class="campo"><label>Perfil *</label>
-              <select [(ngModel)]="form.perfil" name="perfil" (ngModelChange)="aoTrocarPerfil()">
+              <select [(ngModel)]="form.perfil" name="perfil" (ngModelChange)="aoTrocarPerfil()" [disabled]="!!motivoTrava()">
                 @if (ehAdmin) { <option value="ADMIN">Administrador</option> <option value="GERENTE">Gerente</option> }
                 <option value="ATENDENTE">Atendente</option>
                 <option value="TRIAGEM">Triagem</option>
@@ -114,10 +114,11 @@ const ROTULOS: Record<string, string> = {
           </div>
           @if (editando) {
             <div class="campo"><label>Situação</label>
-              <select [(ngModel)]="form.ativo" name="ativo">
+              <select [(ngModel)]="form.ativo" name="ativo" [disabled]="!!motivoTrava()">
                 <option [ngValue]="true">Ativo</option><option [ngValue]="false">Inativo</option>
               </select>
             </div>
+            @if (motivoTrava(); as motivo) { <p class="aviso-trava">{{ motivo }}</p> }
           }
           <div class="acoes-modal">
             <button type="button" class="botao botao--fantasma" (click)="modal.set(false)">Cancelar</button>
@@ -135,6 +136,7 @@ const ROTULOS: Record<string, string> = {
     .vazio { color: var(--texto-3); text-align: center; padding: 24px !important; }
     .linha { display: grid; grid-template-columns: 1fr 190px; gap: 12px; }
     .dica-campo { font-size: 12px; color: var(--texto-3); }
+    .aviso-trava { margin: -4px 0 0; font-size: 12.5px; color: var(--texto-3); }
     .larga { width: min(640px, 100%); }
     .etiqueta { margin: 2px 4px 2px 0; }
     .opcoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
@@ -191,6 +193,23 @@ export class UsuariosPagina implements OnInit {
     this.guichesSel = new Set(u.guiches.map((g) => g.id));
     for (const id of this.unidadesSel) void this.carregarGuiches(id);
     this.modal.set(true);
+  }
+
+  /**
+   * Por que perfil e situação ficam travados neste formulário (null = livres).
+   * A API confere as mesmas regras; aqui é só para não deixar tentar.
+   */
+  motivoTrava(): string | null {
+    const u = this.editando;
+    if (!u) return null;
+    if (u.id === this.auth.usuario()?.id) {
+      return 'Você não pode mudar o perfil nem desativar o seu próprio usuário.';
+    }
+    const adminsAtivos = this.usuarios().filter((x) => x.perfil === 'ADMIN' && x.ativo).length;
+    if (u.perfil === 'ADMIN' && u.ativo && adminsAtivos <= 1) {
+      return 'Este é o único administrador ativo. Cadastre outro antes de mudar o perfil ou desativar este.';
+    }
+    return null;
   }
 
   aoTrocarPerfil() {
