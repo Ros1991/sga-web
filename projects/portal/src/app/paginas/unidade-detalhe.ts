@@ -68,6 +68,7 @@ type Aba = 'dados' | 'guiches' | 'dispositivos' | 'equipe' | 'pesquisa';
                     <label class="opcao">
                       <input type="checkbox" [checked]="ofertados().has(sub.id)" (change)="alternarOferta(sub.id)" />
                       {{ sub.nome }} <span class="prefixo">{{ sub.prefixo }}</span>
+                      @if (!sub.ativo || !servico.ativo) { <span class="inativo">inativo</span> }
                     </label>
                   }
                 </div>
@@ -109,7 +110,8 @@ type Aba = 'dados' | 'guiches' | 'dispositivos' | 'equipe' | 'pesquisa';
     .opcao { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--borda);
       border-radius: 8px; padding: 8px 12px; font-size: 13.5px; cursor: pointer; background: #fff;
       &:has(input:checked) { border-color: var(--azul); background: var(--azul-suave); }
-      .prefixo { font: 700 11px var(--fonte); background: var(--marinho); color: #fff; border-radius: 5px; padding: 2px 6px; } }
+      .prefixo { font: 700 11px var(--fonte); background: var(--marinho); color: #fff; border-radius: 5px; padding: 2px 6px; }
+      .inativo { font-size: 11.5px; color: var(--texto-3); } }
   `],
 })
 export class UnidadeDetalhePagina implements OnInit {

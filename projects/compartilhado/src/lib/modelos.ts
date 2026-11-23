@@ -44,6 +44,8 @@ export interface Servico {
   nome: string;
   ativo: boolean;
   subservicos: Subservico[];
+  /** Só em GET /servicos?uso=1: nenhum subserviço dele emitiu senha. */
+  podeExcluir?: boolean;
 }
 
 export interface Subservico {
@@ -52,6 +54,8 @@ export interface Subservico {
   prefixo: string;
   servicoId: string;
   ativo: boolean;
+  /** Só em GET /servicos?uso=1: nunca emitiu senha. */
+  podeExcluir?: boolean;
 }
 
 export interface NivelPrioridade {

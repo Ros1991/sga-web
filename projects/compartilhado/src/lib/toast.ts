@@ -14,7 +14,7 @@ export class Toasts {
 
   sucesso(texto: string) { this.abrir('sucesso', texto); }
   erro(texto: string) { this.abrir('erro', texto, 6000); }
-  info(texto: string) { this.abrir('info', texto); }
+  info(texto: string, duracao?: number) { this.abrir('info', texto, duracao); }
 
   private abrir(tipo: Toast['tipo'], texto: string, duracao = 3500) {
     const toast: Toast = { id: proximoId++, tipo, texto };

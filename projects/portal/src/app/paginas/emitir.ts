@@ -123,7 +123,8 @@ export class EmitirPagina implements OnInit {
     this.subservicoId = '';
     if (!this.unidadeId) return;
     const detalhe = await this.api.get<UnidadeDetalhe>(`/unidades/${this.unidadeId}`);
-    this.subservicos.set(detalhe.subservicos.filter((s) => s.ativo));
+    // Fica de fora o que está desativado, no subserviço ou no serviço inteiro.
+    this.subservicos.set(detalhe.subservicos.filter((s) => s.ativo && s.servico?.ativo !== false));
   }
 
   async emitir() {
