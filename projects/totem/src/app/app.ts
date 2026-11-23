@@ -1,4 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import * as QRCode from 'qrcode';
 import {
@@ -87,6 +88,8 @@ export class App implements OnInit, OnDestroy {
   );
 
   private temporizador: ReturnType<typeof setInterval> | null = null;
+  /** Relê o catálogo enquanto o totem está parado na tela inicial. */
+  private releitura: ReturnType<typeof setInterval> | null = null;
 
   async ngOnInit(): Promise<void> {
     // Impressão térmica: SEMPRE imprime ao emitir a senha. No quiosque, rode
@@ -120,10 +123,25 @@ export class App implements OnInit, OnDestroy {
     }
     this.config.set(config);
     this.tela.set('servico');
+    // Serviço desativado ou excluído no portal some sem precisar recarregar o totem.
+    this.releitura = setInterval(() => {
+      if (this.tela() === 'servico' && !this.emitindo()) void this.atualizarConfig();
+    }, 60_000);
   }
 
   ngOnDestroy(): void {
     this.pararContagem();
+    if (this.releitura !== null) clearInterval(this.releitura);
+  }
+
+  /** Uma leitura só da configuração; se falhar, mantém a atual. */
+  private async atualizarConfig(): Promise<void> {
+    try {
+      const nova = await this.api.get<ConfigDispositivo>('/dispositivo/config', this.sessao.headers());
+      if (nova.tipo === 'TOTEM') this.config.set(nova);
+    } catch {
+      /* sem rede no momento: segue com o catálogo que já tem */
+    }
   }
 
   protected escolherServico(servico: ServicoTotem): void {
@@ -168,7 +186,14 @@ export class App implements OnInit, OnDestroy {
       }
     } catch (erro) {
       this.toasts.erro(mensagemDeErro(erro));
-      // permanece na tela de prioridade para nova tentativa
+      // Recusa da API pode ser serviço desativado/excluído enquanto o totem
+      // estava aberto: relê o catálogo e, se a opção sumiu, volta ao início.
+      if (erro instanceof HttpErrorResponse && erro.status === 400) {
+        await this.atualizarConfig();
+        const aindaExiste = this.servicos().some((s) => s.subservicos.some((x) => x.id === subservico.id));
+        if (!aindaExiste) this.voltarParaServicos();
+      }
+      // senão, permanece na tela de prioridade para nova tentativa
     } finally {
       this.emitindo.set(false);
     }
@@ -181,6 +206,7 @@ export class App implements OnInit, OnDestroy {
     this.servicoEscolhido.set(null);
     this.subservicoEscolhido.set(null);
     this.tela.set('servico');
+    void this.atualizarConfig();
   }
 
   private iniciarContagem(): void {
