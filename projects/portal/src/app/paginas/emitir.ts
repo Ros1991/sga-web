@@ -26,7 +26,9 @@ import * as QRCode from 'qrcode';
       <div class="cartao resultado">
         <p>Senha emitida:</p>
         <span class="codigo">{{ s.codigo }}</span>
-        <p class="detalhe">{{ s.subservico?.nome }} · {{ s.prioridade?.nome }}</p>
+        <p class="detalhe">
+          @if (servicoDaSenha(s); as servico) { {{ servico }} › }{{ s.subservico?.nome }} · {{ s.prioridade?.nome }}
+        </p>
         @if (qrAvaliacao(); as qr) {
           <div class="avaliacao">
             <img [src]="qr" alt="QR code para avaliar o atendimento" />
@@ -38,16 +40,22 @@ import * as QRCode from 'qrcode';
     } @else if (unidadeId) {
       <div class="cartao">
         <div class="passo">
-          <h3>1. Subserviço</h3>
-          <div class="opcoes">
-            @for (sub of subservicos(); track sub.id) {
-              <button class="opcao" [class.marcada]="subservicoId === sub.id" (click)="subservicoId = sub.id">
-                {{ sub.nome }}
-              </button>
-            } @empty {
-              <p class="dica">Esta unidade não oferta subserviços ainda.</p>
-            }
-          </div>
+          <h3>1. Serviço</h3>
+          <!-- Agrupado por serviço: subserviços de serviços diferentes podem ter o mesmo nome. -->
+          @for (g of grupos(); track g.id) {
+            <div class="grupo">
+              <span class="grupo__nome">{{ g.nome }}</span>
+              <div class="opcoes">
+                @for (sub of g.subservicos; track sub.id) {
+                  <button class="opcao" [class.marcada]="subservicoId === sub.id" (click)="subservicoId = sub.id">
+                    {{ sub.nome }}
+                  </button>
+                }
+              </div>
+            </div>
+          } @empty {
+            <p class="dica">Esta unidade não oferta subserviços ainda.</p>
+          }
         </div>
         <div class="passo">
           <h3>2. Prioridade</h3>
@@ -72,6 +80,9 @@ import * as QRCode from 'qrcode';
       h2 { font-size: 24px; } .sub { color: var(--texto-3); margin: 4px 0 0; font-size: 14px; }
       select { padding: 10px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font: 14px var(--fonte); background-color: #fff; } }
     .passo { margin-bottom: 20px; h3 { font-size: 14px; color: var(--texto-2); margin-bottom: 10px; } }
+    .grupo { margin-bottom: 14px; &:last-child { margin-bottom: 0; } }
+    .grupo__nome { display: block; font: 600 12px var(--fonte); letter-spacing: .05em; text-transform: uppercase;
+      color: var(--texto-3); margin-bottom: 6px; }
     .opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
     .opcao { border: 1.5px solid var(--borda); background: #fff; border-radius: 10px; padding: 12px 18px;
       font: 600 14px var(--fonte); cursor: pointer; color: var(--texto);
@@ -94,7 +105,8 @@ export class EmitirPagina implements OnInit {
   private readonly toasts = inject(Toasts);
 
   readonly unidades = signal<Unidade[]>([]);
-  readonly subservicos = signal<{ id: string; nome: string }[]>([]);
+  /** Subserviços ofertados na unidade, agrupados pelo serviço a que pertencem. */
+  readonly grupos = signal<{ id: string; nome: string; subservicos: { id: string; nome: string }[] }[]>([]);
   readonly prioridades = signal<NivelPrioridade[]>([]);
   readonly emitida = signal<Senha | null>(null);
   /** QR da avaliação daquela senha — o mesmo que o totem imprime. */
@@ -121,10 +133,25 @@ export class EmitirPagina implements OnInit {
 
   async carregarUnidade() {
     this.subservicoId = '';
+    this.grupos.set([]);
     if (!this.unidadeId) return;
     const detalhe = await this.api.get<UnidadeDetalhe>(`/unidades/${this.unidadeId}`);
-    // Fica de fora o que está desativado, no subserviço ou no serviço inteiro.
-    this.subservicos.set(detalhe.subservicos.filter((s) => s.ativo && s.servico?.ativo !== false));
+    const porServico = new Map<string, { id: string; nome: string; subservicos: { id: string; nome: string }[] }>();
+    for (const s of detalhe.subservicos) {
+      // Fica de fora o que está desativado, no subserviço ou no serviço inteiro.
+      if (!s.ativo || s.servico?.ativo === false) continue;
+      const grupo = porServico.get(s.servicoId) ?? { id: s.servicoId, nome: s.servico?.nome ?? 'Outros', subservicos: [] };
+      grupo.subservicos.push({ id: s.id, nome: s.nome });
+      porServico.set(s.servicoId, grupo);
+    }
+    const ordem = (a: { nome: string }, b: { nome: string }) => a.nome.localeCompare(b.nome, 'pt-BR');
+    this.grupos.set([...porServico.values()].sort(ordem).map((g) => ({ ...g, subservicos: g.subservicos.sort(ordem) })));
+  }
+
+  /** Nome do serviço da senha emitida, para o resultado não ficar ambíguo. */
+  servicoDaSenha(s: Senha): string | null {
+    const id = s.subservico?.id;
+    return this.grupos().find((g) => g.subservicos.some((x) => x.id === id))?.nome ?? null;
   }
 
   async emitir() {
