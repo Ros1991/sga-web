@@ -146,6 +146,11 @@ export class App implements OnInit, OnDestroy {
 
   protected escolherServico(servico: ServicoTotem): void {
     this.servicoEscolhido.set(servico);
+    // Com um subserviço só não há o que perguntar: vai direto para a prioridade.
+    if (servico.subservicos.length === 1) {
+      this.escolherSubservico(servico.subservicos[0]);
+      return;
+    }
     this.tela.set('subservico');
   }
 
@@ -161,6 +166,11 @@ export class App implements OnInit, OnDestroy {
   }
 
   protected voltarParaSubservicos(): void {
+    // Serviço de um subserviço só pulou essa tela na ida; na volta também.
+    if ((this.servicoEscolhido()?.subservicos.length ?? 0) <= 1) {
+      this.voltarParaServicos();
+      return;
+    }
     this.subservicoEscolhido.set(null);
     this.tela.set('subservico');
   }
