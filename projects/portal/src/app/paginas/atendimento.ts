@@ -93,7 +93,8 @@ const CHAVE_GUICHE = 'sga.atendimento.guiche';
                   <td><strong>{{ s.codigo }}</strong></td>
                   <td>{{ s.subservico }}</td>
                   <td>
-                    <span class="etiqueta" [class.etiqueta--ambar]="s.prioridadeNivel > 0">{{ s.prioridade }}</span>
+                    <span class="etiqueta" [style.color]="s.prioridadeCor" [style.border-color]="s.prioridadeCor"
+                          [style.background]="s.prioridadeCor + '14'">{{ s.prioridade }}</span>
                   </td>
                   <td><span class="tempo" [class]="'tempo--' + faixaEspera(s)">{{ espera(s) }}</span></td>
                 </tr>

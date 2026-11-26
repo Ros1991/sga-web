@@ -65,6 +65,8 @@ export interface NivelPrioridade {
   /** Cor da fonte no painel (hex). */
   cor: string;
   prefixo: string;
+  /** Prioridade legal: alterna 1 a 1 com as normais na chamada. */
+  prioritaria: boolean;
   ativo: boolean;
 }
 
@@ -122,6 +124,8 @@ export interface SenhaResumo {
   prioridade: string;
   prioridadeNivel: number;
   prioridadeCor: string;
+  /** Conta como prioritária na alternância 1 a 1. */
+  prioritaria: boolean;
   guiche: string | null;
   emitidaEm: string;
   chamadaEm: string | null;

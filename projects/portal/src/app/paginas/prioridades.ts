@@ -9,19 +9,22 @@ import { Api, NivelPrioridade, Toasts, mensagemDeErro } from 'compartilhado';
     <header class="topo">
       <div>
         <h2>Níveis de prioridade</h2>
-        <p class="sub">Quanto MENOR o nível, antes a senha é chamada</p>
+        <p class="sub">A chamada alterna 1 a 1 entre prioritárias e normais; em cada grupo, quanto MENOR o nível, antes a senha é chamada</p>
       </div>
       <button class="botao" (click)="abrirNovo()">+ Novo nível</button>
     </header>
 
     <div class="cartao">
       <table class="tabela">
-        <thead><tr><th>Nome</th><th>Nível</th><th>Cor no painel</th><th>Sufixo na senha</th><th>Situação</th><th></th></tr></thead>
+        <thead><tr><th>Nome</th><th>Nível</th><th>Tipo</th><th>Cor no painel</th><th>Sufixo na senha</th><th>Situação</th><th></th></tr></thead>
         <tbody>
           @for (p of prioridades(); track p.id) {
             <tr>
               <td><strong>{{ p.nome }}</strong></td>
               <td>{{ p.nivel }}</td>
+              <td>
+                <span class="etiqueta" [class.etiqueta--ambar]="p.prioritaria">{{ p.prioritaria ? 'Prioritária' : 'Normal' }}</span>
+              </td>
               <td>
                 <span class="amostra" [style.background]="p.cor"></span>
                 <span class="cor-codigo">{{ p.cor }}</span>
@@ -56,12 +59,20 @@ import { Api, NivelPrioridade, Toasts, mensagemDeErro } from 'compartilhado';
             </div>
           </div>
           <div class="campo">
+            <label>Tipo na alternância</label>
+            <select [(ngModel)]="form.prioritaria" name="prioritaria">
+              <option [ngValue]="true">Prioritária (gestante, idoso, PcD...)</option>
+              <option [ngValue]="false">Normal (público em geral)</option>
+            </select>
+            <small class="ajuda">A chamada alterna 1 prioritária e 1 normal. Sem ningu&eacute;m de um tipo esperando, chama o outro.</small>
+          </div>
+          <div class="campo">
             <label>Cor da fonte no painel</label>
             <div class="cor-linha">
               <input type="color" [(ngModel)]="form.cor" name="cor" />
               <span class="cor-codigo">{{ form.cor }}</span>
             </div>
-            <small class="ajuda">Cor do c&oacute;digo da senha na TV ao chamar (ex.: priorit&aacute;rio vermelho, comum verde)</small>
+            <small class="ajuda">Cor do c&oacute;digo da senha na TV e da etiqueta na tela de atendimento (ex.: priorit&aacute;rio vermelho, comum verde)</small>
           </div>
           @if (editando) {
             <div class="campo"><label>Situação</label>
@@ -96,7 +107,7 @@ export class PrioridadesPagina implements OnInit {
   readonly prioridades = signal<NivelPrioridade[]>([]);
   readonly modal = signal(false);
   editando: NivelPrioridade | null = null;
-  form = { nome: '', nivel: 0, cor: '#1d3451', prefixo: '', ativo: true };
+  form = { nome: '', nivel: 0, cor: '#1d3451', prefixo: '', prioritaria: true, ativo: true };
 
   async ngOnInit() {
     await this.carregar();
@@ -108,13 +119,15 @@ export class PrioridadesPagina implements OnInit {
 
   abrirNovo() {
     this.editando = null;
-    this.form = { nome: '', nivel: 1, cor: '#1d3451', prefixo: '', ativo: true };
+    this.form = { nome: '', nivel: 1, cor: '#1d3451', prefixo: '', prioritaria: true, ativo: true };
     this.modal.set(true);
   }
 
   abrirEdicao(p: NivelPrioridade) {
     this.editando = p;
-    this.form = { nome: p.nome, nivel: p.nivel, cor: p.cor || '#1d3451', prefixo: p.prefixo, ativo: p.ativo };
+    this.form = {
+      nome: p.nome, nivel: p.nivel, cor: p.cor || '#1d3451', prefixo: p.prefixo, prioritaria: p.prioritaria, ativo: p.ativo,
+    };
     this.modal.set(true);
   }
 
